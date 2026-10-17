@@ -21,7 +21,7 @@ def refresh_graphic(obs,port=8771,verify=False):
     new_url=f'http://127.0.0.1:{port}/graphics.html?'+urlencode(query)
     if settings.get('url')!=new_url:
         obs.request('SetInputSettings',{'inputName':SOURCE,'inputSettings':{'url':new_url},'overlay':True})
-        if verify:
+        if verify and obs.request('GetSourceActive',{'sourceName':SOURCE}).get('videoShowing',False):
             try:
                 time.sleep(3)
                 reply=obs.request('GetSourceScreenshot',{'sourceName':SOURCE,'imageFormat':'png','imageWidth':320,'imageHeight':180})
@@ -35,6 +35,7 @@ def refresh_graphic(obs,port=8771,verify=False):
 def main():
     config=json.loads(Path(__file__).with_name('config.json').read_text(encoding='utf-8-sig'))
     core.ALLOWLIST.add('SetInputSettings')
+    core.ALLOWLIST.add('GetSourceActive')
     obs=None
     try:
         port=int(config.get('local_port',8771))

@@ -75,6 +75,7 @@ class ClockDeliveryTests(unittest.TestCase):
             calls.append((kind,data))
             if kind=='GetInputList':return {'inputs':[{'inputName':SOURCE,'inputKind':'browser_source'}]}
             if kind=='GetInputSettings':return {'inputSettings':{'url':old}}
+            if kind=='GetSourceActive':return {'videoShowing':True}
             if kind=='GetSourceScreenshot':return {'imageData':'data:image/png;base64,'+base64.b64encode(raw.getvalue()).decode()}
             return {}
         with patch('refresh_graphic.time.sleep'),self.assertRaises(RuntimeError):refresh_graphic(SimpleNamespace(request=request),verify=True)
