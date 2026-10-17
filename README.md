@@ -39,6 +39,10 @@ Para cambiar la configuración, ejecutar `client/CONFIGURAR.ps1` con PowerShell 
 
 ## Abrir panel y salida
 
+El panel usa la identidad de Panel Go, muestra los datos del partido en tarjetas y adapta los ajustes a pantallas pequeñas. En el lector local, **Preparar en OBS** crea la fuente `Panel Go - Marcador Estrella` apagada en la escena actual. Luego el mismo botón permite **Mostrar en OBS** y **Ocultar de OBS**. Consultar el estado no cambia la visibilidad. El control escucha únicamente en localhost y solo permite modificar esa fuente; no cambia escenas ni inicia o detiene la emisión. La fuente se debe validar fuera del vivo antes de usarla durante una transmisión. Si existe `client/.obs-safety-lock`, se bloquea su activación desde el panel.
+
+El monitor instalado en la PC incluye el mismo diseño y las cámaras. El ZIP del lector incluye los archivos web en `client/panel`; al ejecutar desde el repositorio se usa `public`. El control de OBS se inicia junto al lector. La versión en Render muestra los datos recibidos; la operación de OBS se realiza desde el panel local de la PC del club.
+
 - Control: `https://TU-SERVICIO.onrender.com/index.html`
 - Salida limpia 1920×1080: `https://TU-SERVICIO.onrender.com/graphics.html`
 - Estado: `/api/state`

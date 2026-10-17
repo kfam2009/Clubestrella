@@ -401,3 +401,103 @@ input[readonly] { color:#77e5b2; background:#182321; border-color:#35544b; }
 .feed-stale .feed-warning { display:block; }
 #lastCapture { color:#aaa; }
 @media(max-width:1200px) { .control-page { grid-template-columns:1fr; } .preview-shell { min-height:0; } }
+
+
+
+
+
+/* Panel Go control room. Scoped to the operator interface. */
+.control-page { --accent:#ed383e; --muted:#8e97a7; font-family:Inter,Segoe UI,Arial,sans-serif; background:#0b0d11; color:#eff2f8; height:100dvh; min-height:0; display:grid; grid-template-columns:292px minmax(0,1fr); grid-template-rows:78px minmax(0,1fr); overflow:hidden; }
+.app-header { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; gap:20px; padding:0 28px; border-bottom:1px solid #272b34; background:linear-gradient(100deg,#181a20,#101217); }
+.brand-lockup { display:flex; align-items:center; gap:17px; }
+.brand-lockup img { width:100px; height:64px; object-fit:cover; border-radius:7px; }
+.brand-lockup div { border-left:1px solid #373a43; padding-left:18px; }
+.brand-lockup strong { font-size:18px; letter-spacing:-.4px; display:block; }
+.eyebrow { font-size:10px; font-weight:700; letter-spacing:2px; color:#a0a8b7; text-transform:uppercase; }
+.brand-lockup .eyebrow { margin-top:5px; display:block; }
+.header-badge { display:flex; align-items:center; gap:9px; border:1px solid #35303a; border-radius:20px; padding:9px 14px; color:#cbd1dc; font-size:11px; }
+.header-badge i { width:6px; height:6px; background:var(--accent); border-radius:50%; }
+.control-page .control-panel { min-height:0; padding:22px 18px; background:#11141a; border-right:1px solid #262a33; overflow:auto; }
+.control-page .control-head { margin:0 0 20px; }
+.control-page .control-head strong { font-size:15px; }
+.control-page .control-head span { font-size:11px; margin-top:6px; color:var(--muted); }
+.control-page .control-grid { gap:16px; }
+.control-page fieldset { margin:0; border:0; padding:0; min-width:0; display:grid; grid-template-columns:minmax(0,1fr) 64px; gap:10px; }
+.control-page legend { padding:0; margin-bottom:10px; font-size:10px; font-weight:700; letter-spacing:1.7px; color:#9da7b7; }
+.control-page label { font-size:10px; font-weight:600; color:#a9b1be; text-transform:none; gap:6px; }
+.control-page input { min-height:35px; height:35px; border-radius:7px; background:#0a0c11; border:1px solid #303540; font:500 12px Segoe UI,Arial,sans-serif; padding:8px; transition:border-color .15s; }
+.control-page input:focus { outline:2px solid #ec383e35; border-color:#ed383e; }
+.control-page input[readonly] { color:#95d6b2; background:#12231c; border-color:#254137; }
+.control-page details { grid-column:1/-1; border-bottom:1px solid #262a33; padding-bottom:14px; }
+.control-page summary { cursor:pointer; color:#9ba6b6; font-size:11px; padding:2px 0; }
+.control-page details label { margin-top:10px; }
+.control-page input[type=file] { font-size:10px; height:auto; }
+.control-page input::file-selector-button { border:0; background:#282e39; color:#d9dfeb; padding:4px; border-radius:3px; }
+.control-page .full-field { grid-column:1/-1; }
+.control-page .control-actions { margin-top:20px; display:grid; gap:9px; }
+.control-page .control-actions a { font:600 11px Segoe UI,Arial,sans-serif; border-radius:7px; padding:11px 7px; border:1px solid #393e49; background:#1c2029; }
+.control-page .control-actions #rendererLink { background:linear-gradient(110deg,#d92c33,#f04749); border-color:#ef494f; color:white; box-shadow:0 4px 16px #de33331a; }
+.sidebar-foot { font-size:10px; line-height:1.7; color:#727e91; margin-top:20px; }
+.control-page .preview-shell { min-height:0; overflow:auto; display:flex; flex-direction:column; align-items:stretch; padding:22px 28px; gap:18px; background:radial-gradient(ellipse at 80% 0%,#27141a55,transparent 55%); }
+.workspace-title { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.workspace-title h1 { margin:5px 0 0; font-size:26px; letter-spacing:-1px; font-weight:650; }
+.workspace-title p { color:#828d9f; font-size:12px; margin:7px 0 0; }
+.workspace-tag { font-size:10px; padding:7px 10px; background:#191e27; color:#a4afc1; border:1px solid #2b3340; border-radius:5px; }
+.control-page .live-monitor { width:100%; padding:0; display:flex; flex-direction:column; align-items:stretch; border:0; background:transparent; gap:14px; }
+.control-page .live-head { order:1; font-size:11px; min-height:20px; flex-wrap:wrap; }
+.control-page .live-head strong { font-size:11px; font-weight:600; color:#a3adbc; }
+.control-page .live-head span { font-size:11px; color:#d6a55f; }
+.control-page .live-head span[data-ok=true] { color:#7bc69b; }
+.control-page .live-monitor dl { order:0; grid-template-columns:1.35fr 1fr 1fr .8fr; gap:12px; }
+.control-page .live-monitor dl div { min-height:103px; padding:15px 18px; border:1px solid #2b303a; border-radius:10px; gap:10px; background:linear-gradient(140deg,#1b1f28,#14171e); position:relative; overflow:hidden; }
+.control-page .live-monitor dl div:first-child { border-top:2px solid #ef4248; background:linear-gradient(130deg,#2a1a20,#19171e); }
+.control-page .live-monitor dt { font:600 10px Segoe UI,Arial,sans-serif; letter-spacing:1px; color:#9da7b8; }
+.control-page .live-monitor dd { font:650 clamp(28px,3vw,46px)/1 Segoe UI,Arial,sans-serif; letter-spacing:-1.5px; font-variant-numeric:tabular-nums; }
+.control-page .camera-pair { order:2; gap:14px; grid-template-columns:minmax(0,.85fr) minmax(0,1.5fr); }
+.control-page .camera-pair figure { background:#14171e; border:1px solid #2a303a; border-radius:10px; overflow:hidden; }
+.control-page .camera-pair figcaption { font:600 11px Segoe UI,Arial,sans-serif; margin:0; padding:12px 14px; border-bottom:1px solid #292d36; gap:8px; flex-wrap:wrap; }
+.control-page .camera-pair figcaption small { font-size:10px; color:#8f9dae; }
+.control-page .camera-image { height:clamp(150px,24vh,300px); border:0; background:#07090d; }
+.control-page #lastCapture { order:3; font-size:10px; color:#788497; }
+.output-card { background:#14171e; border:1px solid #2b303a; border-radius:10px; overflow:hidden; flex-shrink:0; }
+.output-head { display:flex; justify-content:space-between; gap:14px; padding:13px 16px; font-size:11px; border-bottom:1px solid #2b303a; }
+.output-head span { font-size:10px; color:#7d899b; }
+.control-page .stage-frame { width:100%; background:repeating-linear-gradient(0deg,transparent,transparent 19px,#ffffff03 20px),repeating-linear-gradient(90deg,#0d1016,#0d1016 19px,#ffffff06 20px); }
+.control-page .stage-preview { background:transparent; border:0; }
+.control-page .stage-preview .feed-warning { bottom:174px; }
+.workspace-footer { display:flex; justify-content:space-between; gap:10px; color:#657185; font-size:10px; margin-top:auto; padding-top:3px; }
+.cloud-note { order:2; border:1px dashed #39404d; padding:28px; border-radius:9px; color:#a4afbf; font-size:12px; line-height:1.7; }
+@media(min-width:1000px) and (max-height:850px) { .control-page { grid-template-rows:66px minmax(0,1fr); } .brand-lockup img { height:54px; width:82px; } .control-page .preview-shell { padding:14px 22px; gap:12px; } .control-page .live-monitor dl div { min-height:83px; padding:12px 16px; gap:5px; } .control-page .camera-image { height:22vh; } .workspace-title h1 { font-size:22px; } }
+@media(max-width:1000px) { .control-page { grid-template-columns:245px minmax(0,1fr); } .control-page .preview-shell { order:0; padding:18px; } .control-page .live-monitor dl { gap:7px; } .control-page .live-monitor dl div { padding:12px 10px; min-height:85px; } .workspace-title h1 { font-size:22px; } .workspace-tag { display:none; } .control-page .camera-pair { grid-template-columns:1fr 1.25fr; } .control-page .camera-image { height:200px; } }
+@media(max-width:700px) { .control-page { height:auto; min-height:100dvh; overflow:auto; grid-template-columns:1fr; grid-template-rows:68px auto auto; } .app-header { padding:0 16px; } .brand-lockup img { width:76px; height:50px; } .brand-lockup strong { font-size:15px; } .brand-lockup .eyebrow { font-size:8px; letter-spacing:1px; } .header-badge { display:none; } .control-page .preview-shell { grid-row:2; overflow:visible; padding:18px 14px; } .control-page .control-panel { grid-row:3; border-top:1px solid #2a303a; border-right:0; padding:20px; } .control-page .live-monitor dd { font-size:28px; } .control-page .live-monitor dl { gap:6px; } .control-page .live-monitor dl div { padding:12px 9px; } .control-page .live-monitor dt { font-size:8px; } .control-page .camera-pair { grid-template-columns:1fr; } .control-page .camera-image { height:230px; } .workspace-footer { margin-top:10px; } }
+
+.control-page .settings-drawer { border:0; padding:0; }
+.control-page .settings-drawer > summary { display:none; }
+.control-page .settings-drawer > .panel-config { display:block; }
+.obs-actions { display:flex; align-items:center; gap:10px; }
+.control-page #obsGraphicButton { border:1px solid #4b5362; background:#232b38; color:#f5f6fa; padding:7px 12px; border-radius:5px; cursor:pointer; font:600 10px Segoe UI,Arial,sans-serif; }
+.control-page #obsGraphicButton[data-on=true] { background:#9d272d; border-color:#d74047; }
+.control-page #obsGraphicButton:disabled { opacity:.5; cursor:default; }
+.control-page #obsGraphicStatus[data-on=true] { color:#8bd5ab; }
+@media(max-width:700px) {
+ .control-page { grid-template-rows:54px auto auto; }
+ .brand-lockup img { height:43px; width:66px; }
+ .control-page .preview-shell { gap:8px; padding:10px 14px; }
+ .workspace-title .eyebrow { font-size:8px; }
+ .workspace-title h1 { font-size:20px; margin-top:3px; }
+ .workspace-title p,.workspace-footer { display:none; }
+ .control-page .live-monitor { gap:8px; }
+ .control-page .live-monitor dl div { min-height:66px; padding:9px 10px; gap:6px; }
+ .control-page .live-monitor dd { font-size:27px; }
+ .control-page .live-head,.control-page .live-head strong,.control-page .live-head span { font-size:9px; }
+ .control-page .camera-pair { grid-template-columns:minmax(0,1fr) minmax(0,1.4fr); gap:9px; }
+ .control-page .camera-pair figcaption { padding:8px 10px; font-size:10px; }
+ .control-page .camera-pair figcaption small { font-size:8px; }
+ .control-page .camera-image { height:clamp(95px,20vh,160px); }
+ .control-page .output-head { padding:9px 11px; font-size:10px; }
+ .control-page .output-head span { font-size:8px; }
+ .control-page .control-panel { padding:6px 16px; }
+ .control-page .settings-drawer > summary { display:block; font-size:11px; padding:5px 0; }
+ .control-page .settings-drawer:not([open]) > .panel-config { display:none; }
+ .control-page .settings-drawer[open] > .panel-config { padding-top:16px; }
+}

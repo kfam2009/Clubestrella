@@ -61,6 +61,24 @@ function acceptFeed(live) {
     const node = document.getElementById(id);
     if (node) {node.textContent = state[key];node.classList.toggle('value-stale',!live.fields?.[key]?.valid);}
   }
+  const game = document.getElementById('gamePreview');
+  const gameStatus = document.getElementById('gameStatus');
+  const continuous = live.gameMode === 'continuous';
+  const player = document.getElementById('gameVideo');
+  if (player) player.hidden = !continuous;
+  if (player && continuous && player.dataset.enabled !== 'true') {
+    player.dataset.enabled = 'true';
+    customElements.whenDefined('club-game').then(() => { player.src = '/video/ws'; });
+  }
+  if (continuous && game) game.hidden = true;
+  if (gameStatus && !continuous) gameStatus.textContent = live.gameConnected ? 'Capturas de respaldo' : 'Sin actualización';
+  if (gameStatus && continuous && !live.gameReady) gameStatus.textContent = live.gameStatus || 'Preparando video continuo';
+  if (game && !continuous) {
+    game.classList.toggle('value-stale', !live.gameConnected);
+    if (live.gameImage && live.gameRevision && game.dataset.revision !== String(live.gameRevision)) {
+      game.hidden = false; game.src = live.gameImage + '?r=' + live.gameRevision; game.dataset.revision = live.gameRevision;
+    }
+  }
   const preview = document.getElementById('boardPreview');
   if (preview && live.updatedAt && preview.dataset.revision !== String(live.revision)) {
     preview.hidden = false;preview.src = 'board.png?t=' + live.revision;preview.dataset.revision = live.revision;
@@ -96,7 +114,7 @@ function fitStage() {
     const width = parent.clientWidth, height = stage.classList.contains('stage-render') ? innerHeight : Math.min(500, width*1080/1920);
     const scale = Math.min(width/1920,height/1080);
     stage.style.transform = stage.classList.contains('stage-render') ? `translate(-50%,-50%) scale(${scale})` : `scale(${scale})`;
-    if (stage.classList.contains('stage-preview')) stage.parentElement.style.height = `${1080*scale}px`;
+    if (stage.classList.contains('stage-preview')) { stage.style.top = `${-820*scale}px`; stage.parentElement.style.height = `${260*scale}px`; }
   });
 }
 render();fitStage();window.addEventListener('resize',fitStage);
@@ -108,3 +126,38 @@ if (liveMode) {
 } else {
   document.getElementById('liveStatus')?.replaceChildren('Modo manual');
 }
+
+// Responsive settings drawer keeps desktop controls visible and small screens compact.
+const settingsDrawer = document.querySelector('.settings-drawer');
+function fitSettingsDrawer() { if (settingsDrawer) settingsDrawer.open = innerWidth > 700; }
+fitSettingsDrawer(); window.addEventListener('resize',fitSettingsDrawer);
+
+// Dedicated OBS graphic control: initial reads never change visibility.
+const obsGraphicButton=document.getElementById('obsGraphicButton');
+const obsGraphicStatus=document.getElementById('obsGraphicStatus');
+let obsGraphicToken='',obsGraphicState=null,obsGraphicBusy=false;
+async function refreshOBSGraphic() {
+ if (!obsGraphicButton || obsGraphicBusy) return;
+ try {
+  const r=await fetch('http://127.0.0.1:8774/state',{cache:'no-store',signal:AbortSignal.timeout(2500)});
+  if(!r.ok)throw Error(); const s=await r.json();obsGraphicState=s;obsGraphicToken=s.token;
+  if(s.safetyLocked&&!s.enabled){obsGraphicButton.disabled=true;obsGraphicButton.textContent='Prueba pausada';obsGraphicStatus.textContent='APAGADO EN OBS';return;}
+  obsGraphicButton.disabled=false;
+  obsGraphicButton.textContent=!s.ready?'Preparar en OBS':s.enabled?'Ocultar de OBS':'Mostrar en OBS';
+  obsGraphicButton.dataset.on=String(s.enabled);obsGraphicButton.setAttribute('aria-pressed',String(s.enabled));
+  obsGraphicStatus.textContent=!s.ready?'Sin agregar':s.enabled?'VISIBLE EN OBS':'APAGADO EN OBS';
+  obsGraphicStatus.dataset.on=String(s.enabled);
+ } catch {obsGraphicButton.disabled=true;obsGraphicStatus.textContent='Control OBS sin conexión';}
+}
+obsGraphicButton?.addEventListener('click',async()=>{
+ if(obsGraphicBusy)return;
+ await refreshOBSGraphic();if(!obsGraphicState||!obsGraphicToken)return;
+ obsGraphicBusy=true;obsGraphicButton.disabled=true;
+ try{
+  const route=obsGraphicState.ready?'visibility':'install';
+  const r=await fetch('http://127.0.0.1:8774/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Panel-Token':obsGraphicToken},body:JSON.stringify({enabled:!obsGraphicState.enabled}),signal:AbortSignal.timeout(12000)});
+  if(!r.ok)throw Error();
+ }catch{obsGraphicStatus.textContent='No se pudo cambiar en OBS';}
+ finally{obsGraphicBusy=false;await refreshOBSGraphic();}
+});
+if(obsGraphicButton){refreshOBSGraphic();setInterval(refreshOBSGraphic,3000);}

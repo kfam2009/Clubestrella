@@ -5,6 +5,7 @@ node_modules/
 client/config.json
 client/prueba-local.json
 client/.runtime/
+client/.obs-safety-lock
 client/tools/*.exe
 client/tools/*.zip
 client/.venv/

@@ -14,6 +14,7 @@ const ASSETS = new Map([
   ...['index.html', 'graphics.html'].map(n => ['/' + n, [n, 'text/html; charset=utf-8']]),
   ['/script.js', ['script.js', 'text/javascript; charset=utf-8']],
   ['/styles.css', ['styles.css', 'text/css; charset=utf-8']],
+  ['/assets/panelgo-logo.png', ['assets/panelgo-logo.png', 'image/png']],
   ...[1, 2, 3, 4].map(n => [`/assets/page-04-image-0${n}.png`, [`assets/page-04-image-0${n}.png`, 'image/png']]),
 ]);
 

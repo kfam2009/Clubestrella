@@ -1,97 +1,10 @@
-<!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Club Estrella — Control</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body class="control-page">
-  <aside class="control-panel">
-    <header class="control-head">
-
-      <div>
-        <strong>Club Estrella</strong>
-        <span>Reloj · período · local · visita</span>
-      </div>
-    </header>
-
-    <section class="control-grid">
-      <label>Local
-        <input id="homeName" value="ESTRELLA">
-      </label>
-      <label>Puntos local
-        <input id="homeScore" value="15" inputmode="numeric">
-      </label>
-      <label>Logo local
-        <input id="homeLogo" list="logoOptions" value="assets/page-04-image-04.png">
-      </label>
-      <label>Archivo logo local
-        <input id="homeLogoFile" type="file" accept="image/*">
-      </label>
-
-      <label>Visita
-        <input id="awayName" value="VISITA">
-      </label>
-      <label>Puntos visita
-        <input id="awayScore" value="17" inputmode="numeric">
-      </label>
-      <label>Logo visita
-        <input id="awayLogo" list="logoOptions" value="assets/page-04-image-02.png">
-      </label>
-      <label>Archivo logo visita
-        <input id="awayLogoFile" type="file" accept="image/*">
-      </label>
-
-      <label>Cuarto
-        <input id="period" value="1C">
-      </label>
-      <label>Reloj
-        <input id="clock" value="3:46">
-      </label>
-
-
-      <label>Linea torneo
-        <input id="tournament" value="LIGA PROVINCIAL FBB">
-      </label>
-      <label>Linea categoria / zona
-        <input id="category" value="U15 M - NORTE 2 / ZONA C">
-      </label>
-    </section>
-
-    <div class="control-actions">
-      <a href="https://github.com/kfam2009/Clubestrella/archive/refs/heads/main.zip">Descargar lector para la PC</a>
-      <a id="rendererLink" href="graphics.html" target="_blank">Abrir salida limpia</a>
-    </div>
-  </aside>
-
-  <datalist id="logoOptions">
-    <option value="assets/page-04-image-04.png">Universal</option>
-    <option value="assets/page-04-image-02.png">Union Vecinal</option>
-    <option value="assets/page-06-image-04.png">Ciclista</option>
-  </datalist>
-
-  <main class="preview-shell">
-    <section class="live-monitor" aria-label="Monitor OCR">
-      <div class="live-head">
-        <strong>Lectura desde la PC del cliente</strong>
-        <span id="liveStatus">Esperando OBS</span>
-      </div>
-      <img id="boardPreview" alt="Captura del tablero" hidden>
-      <dl>
-        <div><dt>Tiempo</dt><dd id="liveClock">--:--</dd></div>
-        <div><dt>Local</dt><dd id="liveHome">--</dd></div>
-        <div><dt>Visita</dt><dd id="liveAway">--</dd></div>
-        <div><dt>Periodo</dt><dd id="livePeriod">--</dd></div>
-      </dl>
-      <small id="lastCapture">Sin capturas</small>
-    </section>
-    <div class="stage-frame"><div class="stage stage-preview">
-      <div data-scorebug></div>
-    </div></div>
-  </main>
-
-  <template id="scorebugTemplate">
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Panel Go · Club Estrella</title><link rel="stylesheet" href="styles.css?v=studio1"></head><body class="control-page"><header class="app-header"><div class="brand-lockup"><img src="assets/panelgo-logo.png" alt="Panel Go"><div><strong>Club Estrella</strong><span class="eyebrow">Sports broadcast studio</span></div></div><span class="header-badge"><i></i> CENTRO DE CONTROL</span></header>
+<aside class="control-panel"><details class="settings-drawer"><summary>Ajustes del partido</summary><div class="panel-config"><header class="control-head"><div><strong>Configuración del partido</strong><span>Personalizá tu transmisión</span></div></header><section class="control-grid"><fieldset><legend>LOCAL</legend><label>Nombre del equipo<input id="homeName" value="ESTRELLA"></label><label>Puntos<input id="homeScore" value="--" inputmode="numeric"></label><details><summary>Escudo del equipo</summary><label>Dirección de imagen<input id="homeLogo" placeholder="URL o archivo local"></label><label>Subir escudo<input id="homeLogoFile" type="file" accept="image/*"></label></details></fieldset><fieldset><legend>VISITANTE</legend><label>Nombre del equipo<input id="awayName" value="VISITA"></label><label>Puntos<input id="awayScore" value="--" inputmode="numeric"></label><details><summary>Escudo del equipo</summary><label>Dirección de imagen<input id="awayLogo" placeholder="URL o archivo local"></label><label>Subir escudo<input id="awayLogoFile" type="file" accept="image/*"></label></details></fieldset><fieldset><legend>PARTIDO</legend><label>Reloj<input id="clock" value="--:--"></label><label>Período<input id="period" value="--"></label><label class="full-field">Torneo<input id="tournament" value="CLUB ESTRELLA"></label><label class="full-field">Categoría / zona<input id="category" placeholder="Categoría del encuentro"></label></fieldset></section><div class="control-actions"><a id="rendererLink" href="graphics.html" target="_blank" rel="noopener">Abrir salida limpia ↗</a><a href="https://github.com/kfam2009/Clubestrella/archive/refs/heads/main.zip">Descargar lector para la PC</a></div><p class="sidebar-foot">Los números se leen del tablero.<br>Los nombres y escudos los elegís vos.</p></div></details></aside>
+<main class="preview-shell"><div class="workspace-title"><div><span class="eyebrow">MATCH CENTER</span><h1>El partido, bajo control.</h1><p>Marcador automático · Monitoreo del encuentro</p></div><span class="workspace-tag">CLUB ESTRELLA / BÁSQUET</span></div>
+<section class="live-monitor" aria-label="Monitor del partido"><div class="live-head"><strong>ESTADO DE LA LECTURA</strong><span id="liveStatus">Esperando lector</span></div><dl><div><dt>TIEMPO DE JUEGO</dt><dd id="liveClock">--:--</dd></div><div><dt>LOCAL</dt><dd id="liveHome">--</dd></div><div><dt>VISITA</dt><dd id="liveAway">--</dd></div><div><dt>PERÍODO</dt><dd id="livePeriod">--</dd></div></dl><div class="cloud-note"><strong>Tu partido, conectado.</strong><br>El lector de la PC del club envía el marcador a este panel. Los monitores de las cámaras se consultan desde esa PC.</div><small id="lastCapture">Sin capturas</small></section>
+<section class="output-card"><div class="output-head"><strong>Vista previa de salida</strong><div class="obs-actions"><span id="obsGraphicStatus" role="status">Conectando con OBS</span><button id="obsGraphicButton" disabled>Control OBS</button></div></div><div class="stage-frame"><div class="stage stage-preview"><div data-scorebug></div></div></div></section>
+<footer class="workspace-footer"><span>PANEL GO / SPORTS</span><span>Control total en tus manos.</span></footer></main>
+<template id="scorebugTemplate">
     <div class="feed-warning">LECTURA EN PAUSA · ÚLTIMO DATO</div>
     <section class="fbb-scorebug" aria-label="Club Estrella">
       <div class="fbb-mark">CAE</div>
@@ -110,7 +23,4 @@
       </div>
     </section>
   </template>
-
-  <script src="script.js"></script>
-</body>
-</html>
+<script src="script.js?v=studio1"></script></body></html>

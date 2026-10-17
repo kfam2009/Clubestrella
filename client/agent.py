@@ -4,6 +4,7 @@ import html
 import json
 import logging
 import os
+import re
 import threading
 import time
 import urllib.error
@@ -16,6 +17,7 @@ from types import SimpleNamespace
 
 from core import Feed, OBS
 from continuous_video import ContinuousVideo
+from obs_control import GraphicControl,make_control_server
 
 ROOT = Path(__file__).resolve().parent
 
@@ -79,12 +81,19 @@ def local_server(feed,uplink,game,port):
 <script>let revision=-1;async function poll(){try{const r=await fetch('/api/state',{cache:'no-store',signal:AbortSignal.timeout(2500)});const s=await r.json();for(const k of ['clock','homeScore','awayScore','period']){document.getElementById(k).textContent=s[k];document.getElementById(k).classList.toggle('stale',!s.fields[k].valid);}document.getElementById('status').textContent=s.status+' · lector '+s.version;document.getElementById('cloud').textContent=s.uplink;document.getElementById('videoBackend').textContent=s.gameStatus||'';if(s.revision!==revision){revision=s.revision;document.getElementById('board').src='/board.png?r='+revision;}}catch{document.getElementById('status').textContent='Sin conexión con el lector local';}finally{setTimeout(poll,1000)}}poll();</script></html>'''.replace('CLOUD_URL',html.escape(uplink.config['cloud_url'],quote=True))
     if not uplink.config['cloud_url']:
         page=page.replace('<a href="" target="_blank" rel="noopener">Abrir panel en Render</a>','Prueba local · no se envian datos a Render')
+    public=ROOT.parent/'public'
+    if not public.is_dir():public=ROOT/'panel'
+    if (public/'index.html').is_file():
+        page=(public/'index.html').read_text(encoding='utf-8')
+        monitors='<div class="camera-pair"><figure><figcaption>01 / Tablero <small>Lectura automática</small></figcaption><div class="camera-image"><img id="boardPreview" alt="Captura del tablero" hidden></div></figure><figure><figcaption>02 / Cancha <small id="gameStatus">Conectando</small></figcaption><div class="camera-image"><club-game id="gameVideo" aria-label="Video continuo del juego"></club-game><img id="gamePreview" hidden alt="Cámara del juego"></div></figure></div>'
+        page=re.sub(r'<div class="cloud-note">.*?</div>',monitors,page,flags=re.S)
+        page=page.replace('<script src="script.js','<script type="module" src="/video-monitor.js"></script><script src="script.js')
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
         def do_GET(self):
             route=self.path.split('?',1)[0]
             if route=='/video/ws':game.forward_websocket(self);return
-            if route=='/':data=page.encode();kind='text/html; charset=utf-8'
+            if route in ('/','/index.html'):data=page.encode();kind='text/html; charset=utf-8'
             elif route=='/api/state':
                 state=feed.snapshot();state.update(game.snapshot());state['uplink']=uplink.message
                 data=json.dumps(state).encode();kind='application/json'
@@ -93,6 +102,18 @@ def local_server(feed,uplink,game,port):
                 kind='image/png'
             elif route in ('/video-monitor.js','/vendor/video-rtc.js'):
                 data=(ROOT/route.lstrip('/')).read_bytes();kind='text/javascript; charset=utf-8'
+            elif route=='/api/events':
+                self.send_response(200);self.send_header('Content-Type','text/event-stream');self.send_header('Cache-Control','no-store');self.end_headers()
+                try:
+                    while True:
+                        state=feed.snapshot();state.update(game.snapshot());state['uplink']=uplink.message
+                        self.wfile.write(('data: '+json.dumps(state)+'\n\n').encode());self.wfile.flush();time.sleep(1)
+                except (OSError,ConnectionError):pass
+                return
+            elif route in ('/graphics.html','/styles.css','/script.js') or route.startswith('/assets/') and '..' not in route:
+                file=(public/route.lstrip('/')).resolve()
+                if not file.is_relative_to(public.resolve()) or not file.is_file():self.send_error(404);return
+                data=file.read_bytes();kind={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.png':'image/png'}.get(file.suffix,'application/octet-stream')
             else:self.send_error(404);return
             self.send_response(200);self.send_header('Content-Type',kind);self.send_header('Cache-Control','no-store');self.send_header('Content-Length',str(len(data)));self.end_headers();self.wfile.write(data)
     return ThreadingHTTPServer(('127.0.0.1',port),Handler)
@@ -109,6 +130,11 @@ def main():
     game=ContinuousVideo(feed.args,OBS,ROOT)
     port=int(config.get('local_port',8771))
     server=local_server(feed,uplink,game,port)
+    control_server=None
+    try:
+        control_server=make_control_server(GraphicControl(port=config['obs_port']),graphic_url=f'http://127.0.0.1:{port}/graphics.html')
+        threading.Thread(target=control_server.serve_forever,daemon=True).start()
+    except OSError:logging.info('El control OBS ya esta abierto o su puerto no esta disponible.')
     threading.Thread(target=feed.run,daemon=True).start()
     if not args.local_only:threading.Thread(target=uplink.run,daemon=True).start()
     else:uplink.message='Prueba local · sin envio a Render'
@@ -118,7 +144,9 @@ def main():
     if not args.no_browser:webbrowser.open(address)
     try:server.serve_forever()
     except KeyboardInterrupt:pass
-    finally:game.close();server.server_close()
+    finally:
+        game.close();server.server_close()
+        if control_server:control_server.shutdown();control_server.server_close()
 
 
 if __name__=='__main__':
