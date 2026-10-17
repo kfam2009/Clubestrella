@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw
 import numpy as np
 
-READER_VERSION = '2026.10.17.5'
+READER_VERSION = '2026.10.17.6'
 
 # Corners TL, TR, BR, BL in the native 1920x1080 camera frame.
 QUADS = {

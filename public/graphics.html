@@ -19,17 +19,18 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent
 <div id="bar"><div class="cell brand"><img src="assets/panelgo-logo.png" alt="Panel Go"></div><img id="homeLogo" class="logo" alt=""><div id="homeName" class="cell team">ESTRELLA</div><div id="homeScore" class="cell score">--</div><img id="awayLogo" class="logo" alt=""><div id="awayName" class="cell team">VISITA</div><div id="awayScore" class="cell score">--</div><div id="period" class="cell period">--</div><div id="clock" class="cell clock">--:--</div><div class="info"><div class="info-copy"><strong id="tournament">CLUB ESTRELLA</strong><span id="category"></span></div><img id="eventLogo" class="event-logo" alt="Logo de categoría / zona"></div></div>
 <script>
 (function(){
- var fields=['clock','homeScore','awayScore','period'],last=0,lastGood=false;
+ var fields=['clock','homeScore','awayScore','period'],last=0,lastGood=false,lastStamp=0,busy=false;
  var params=new URLSearchParams(location.search),manual=params.get('live')==='0';
  var settings={};try{settings=JSON.parse(localStorage.getItem('club-estrella-settings-v1')||'{}');}catch(e){}
  ['homeName','awayName','tournament','category'].forEach(function(k){var v=params.get(k)||settings[k];if(v)document.getElementById(k).textContent=v;});
  ['homeLogo','awayLogo','eventLogo'].forEach(function(k){var v=params.get(k)||settings[k];if(v){var n=document.getElementById(k);n.src=v;n.style.display='block';}});
  function applySettings(values){if(!values)return;['homeName','awayName','tournament','category'].forEach(function(k){if(typeof values[k]==='string')document.getElementById(k).textContent=values[k];});['homeLogo','awayLogo','eventLogo'].forEach(function(k){if(typeof values[k]!=='string')return;var n=document.getElementById(k),v=values[k];if(v&&n.getAttribute('src')!==v)n.src=v;n.style.display=v?'block':'none';});}
- function accept(s){applySettings(s.graphicSettings);if(s.service!=='club-estrella')return;last=Date.now();lastGood=!!s.connected&&s.ocrStatus==='ok';fields.forEach(function(k){if(typeof s[k]==='string')document.getElementById(k).textContent=s[k];});}
+ function accept(s){applySettings(s.graphicSettings);if(s.service!=='club-estrella')return;var stamp=Date.parse(s.updatedAt)||0;if(stamp&&stamp<lastStamp)return;if(stamp)lastStamp=stamp;last=Date.now();lastGood=!!s.connected&&s.ocrStatus==='ok';fields.forEach(function(k){if(typeof s[k]==='string')document.getElementById(k).textContent=s[k];});}
  function health(){}
  function pollSettings(){if(location.hostname!=='127.0.0.1'&&location.hostname!=='localhost')return;var c=new XMLHttpRequest();c.open('GET','http://127.0.0.1:8774/settings',true);c.timeout=2500;c.onload=function(){try{if(c.status===200)applySettings(JSON.parse(c.responseText));}catch(e){}};c.send();}
- function poll(){pollSettings();var x=new XMLHttpRequest();x.open('GET','api/state',true);x.timeout=3000;x.onload=function(){try{if(x.status===200)accept(JSON.parse(x.responseText));}catch(e){}health();};x.onerror=health;x.ontimeout=health;x.send();}
+ function poll(force){if(busy||(!force&&Date.now()-last<500))return;busy=true;var x=new XMLHttpRequest();x.open('GET','api/state',true);x.timeout=1500;x.onload=function(){busy=false;try{if(x.status===200)accept(JSON.parse(x.responseText));}catch(e){}health();};x.onerror=x.ontimeout=function(){busy=false;health();};x.send();}
+
  if(manual){fields.forEach(function(k){if(params.has(k))document.getElementById(k).textContent=params.get(k);});}
- else{poll();setInterval(poll,1500);setInterval(health,1000);}
+ else{poll(true);pollSettings();setInterval(pollSettings,1000);if(window.EventSource){var events=new EventSource('api/events');events.onmessage=function(event){try{accept(JSON.parse(event.data));}catch(e){}};}setInterval(function(){poll(false);},250);setInterval(health,1000);}
 })();
 </script></body></html>

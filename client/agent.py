@@ -52,22 +52,28 @@ class Uplink:
         self.opener=urllib.request.build_opener(NoRedirect())
 
     def run(self):
+        last_signature=None;last_sent=0
         while True:
             state=self.feed.snapshot()
+            signature=tuple(state.get(k) for k in ('clock','homeScore','awayScore','period','connected','boardOff'))+tuple(state['fields'][k]['valid'] for k in ('clock','homeScore','awayScore','period'))
+            if signature==last_signature and time.monotonic()-last_sent<1:
+                with self.feed.lock:self.feed.lock.wait_for(lambda:self.feed.revision!=state['revision'],timeout=.2)
+                continue
             # Keep frames, source details, PID and credentials on the client PC.
             payload={k:state[k] for k in ('clock','homeScore','awayScore','period','fields','connected','updatedAt','boardOff')}
             request=urllib.request.Request(self.config['cloud_url']+'/api/ingest',data=json.dumps(payload).encode(),
                 headers={'Content-Type':'application/json','Authorization':'Bearer '+self.config['ingest_token']},method='POST')
             try:
-                with self.opener.open(request,timeout=10) as response:
+                with self.opener.open(request,timeout=3) as response:
                     if response.status!=200:raise RuntimeError('Respuesta inesperada de Render')
                     response.read(2048)
                 self.last_ok=time.time();self.message='Datos enviados a Render'
+                last_signature=signature;last_sent=time.monotonic()
             except urllib.error.HTTPError as exc:
                 self.message='Clave rechazada por Render' if exc.code==401 else f'Render respondio HTTP {exc.code}'
             except Exception:
                 self.message='No se pudo enviar a Render; reintentando'
-            time.sleep(1)
+            if self.message!='Datos enviados a Render':time.sleep(1)
 
 
 def local_server(feed,uplink,game,port):
@@ -102,7 +108,7 @@ def local_server(feed,uplink,game,port):
             super().end_headers()
         def do_OPTIONS(self):
             if self.headers.get('Origin') not in allowed_origins:self.send_error(403);return
-            if self.path.split('?',1)[0] not in ('/api/state','/board.png','/game.jpg'):self.send_error(404);return
+            if self.path.split('?',1)[0] not in ('/api/state','/api/events','/board.png','/game.jpg'):self.send_error(404);return
             self.send_response(204)
             self.send_header('Access-Control-Allow-Methods','GET, OPTIONS')
             self.send_header('Access-Control-Allow-Private-Network','true')
@@ -129,7 +135,8 @@ def local_server(feed,uplink,game,port):
                 try:
                     while True:
                         state=feed.snapshot();state.update(game.snapshot());state['uplink']=uplink.message
-                        self.wfile.write(('data: '+json.dumps(state)+'\n\n').encode());self.wfile.flush();time.sleep(1)
+                        self.wfile.write(('data: '+json.dumps(state)+'\n\n').encode());self.wfile.flush()
+                        with feed.lock:feed.lock.wait_for(lambda:feed.revision!=state['revision'],timeout=1)
                 except (OSError,ConnectionError):pass
                 return
             elif route in ('/graphics.html','/styles.css','/script.js') or route.startswith('/assets/') and '..' not in route:
@@ -146,7 +153,7 @@ def main():
     try:config=load_config(args.config,args.local_only)
     except Exception as exc:raise SystemExit('Configuracion invalida: '+str(exc))
     os.environ['OBS_PASSWORD']=config.get('obs_password','')
-    feed=Feed(SimpleNamespace(host='127.0.0.1',obs_port=config['obs_port'],source=config.get('source','Camara 2'),game_source=config.get('game_source','camara 01'),interval=.3,
+    feed=Feed(SimpleNamespace(host='127.0.0.1',obs_port=config['obs_port'],source=config.get('source','Camara 2'),game_source=config.get('game_source','camara 01'),interval=.2,
                              game_rtsp=config.get('game_rtsp',''),video_port=int(config.get('video_port',1987))))
     uplink=Uplink(feed,config)
     game=ContinuousVideo(feed.args,OBS,ROOT) if config.get('monitor_mode','program')=='camera' else ProgramPreview(feed.args,OBS)

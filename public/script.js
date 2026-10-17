@@ -12,7 +12,7 @@ const state = {...defaults, ...savedSettings()};
 for (const [key,value] of params) if (key in defaults && (!liveMode || !liveKeys.includes(key))) state[key] = value;
 if (liveMode) for (const key of liveKeys) state[key] = defaults[key];
 let lastFeed = null, lastEvent = 0, polling = false;
-let remoteMonitorsActive = false;
+let remoteMonitorsActive = false, lastLocalEvent = 0;
 let programStream=null;
 
 function render() {
@@ -54,7 +54,9 @@ function showHealth() {
   const stamp = document.getElementById('lastCapture');
   if (stamp) stamp.textContent = lastFeed?.updatedAt ? 'Captura: ' + new Date(lastFeed.updatedAt).toLocaleTimeString('es-AR') : 'Sin capturas';
 }
-function acceptFeed(live) {
+function acceptFeed(live, local=false) {
+  if(!local && Date.now()-lastLocalEvent<2500)return;
+  if(local)lastLocalEvent=Date.now();
   if (!liveMode || live.service !== 'club-estrella') return;
   lastFeed = live; lastEvent = Date.now();
   for (const key of liveKeys) if (typeof live[key] === 'string') state[key] = live[key];
@@ -188,10 +190,10 @@ async function syncOBSSettings() {
  finally{obsSettingsButton.disabled=false;}
 }
 function scheduleOBSSettings(){
- if(localStorage.getItem('club-estrella-obs-linked')!=='1')return;
  clearTimeout(obsSettingsTimer);obsSettingsTimer=setTimeout(syncOBSSettings,350);
 }
 obsSettingsButton?.addEventListener('click',syncOBSSettings);
+if(localStorage.getItem(storageKey)&&localStorage.getItem('club-estrella-obs-linked')!=='1')scheduleOBSSettings();
 
 // A fresh installation inherits the saved match names and logos from its local controller.
 if (!localStorage.getItem(storageKey)) {
@@ -210,21 +212,27 @@ if(location.hostname==='clubestrella-panel.onrender.com') {
  cameras.innerHTML='<figure><figcaption>01 / Tablero <small>Lectura automática · esta PC</small></figcaption><div class="camera-image"><img id="boardPreview" alt="Captura del tablero" hidden></div></figure><figure><figcaption><span id="gameLabel">02 / Salida de OBS</span> <small id="gameStatus">Conectando</small></figcaption><div class="camera-image"><img id="gamePreview" alt="Salida de OBS de esta PC" hidden></div></figure>';
  note?.before(cameras);
  if(note)note.textContent='Conectando con los monitores de esta PC. Mantené abierto el lector; si el navegador pide acceso a la red local, permitilo para este panel.';
+ function acceptLocalState(local){
+  if(local.service!=='club-estrella')return;
+  remoteMonitorsActive=true;cameras.hidden=false;if(note)note.hidden=true;
+  cameras.querySelectorAll('img').forEach(img=>img.classList.remove('value-stale'));
+  acceptFeed({...local,gameMode:'snapshots',gameImage:'http://127.0.0.1:8771/game.jpg',boardImage:'http://127.0.0.1:8771/board.png'},true);
+ }
  let busy=false;
+ const localEvents=new EventSource('http://127.0.0.1:8771/api/events');
+ localEvents.onmessage=event=>{try{acceptLocalState(JSON.parse(event.data));}catch{}};
  async function pollLocalMonitors(){
-  if(busy)return;busy=true;
+  if(busy||Date.now()-lastLocalEvent<800)return;busy=true;
   try{
    const response=await fetch('http://127.0.0.1:8771/api/state',{cache:'no-store',signal:AbortSignal.timeout(2500)});
    if(!response.ok)throw Error();const local=await response.json();if(local.service!=='club-estrella')throw Error();
-   remoteMonitorsActive=true;cameras.hidden=false;if(note)note.hidden=true;
-   cameras.querySelectorAll('img').forEach(img=>img.classList.remove('value-stale'));
-   updateMonitors({...local,gameMode:'snapshots',gameImage:'http://127.0.0.1:8771/game.jpg',boardImage:'http://127.0.0.1:8771/board.png'});
+   acceptLocalState(local);
   }catch{
    if(note){note.hidden=false;note.textContent='Monitores sin conexión con esta PC. Abrí el lector actualizado y permití el acceso a la red local si el navegador lo solicita.';}
    cameras.querySelectorAll('img').forEach(img=>img.classList.add('value-stale'));
   }finally{busy=false;}
  }
- pollLocalMonitors();setInterval(pollLocalMonitors,2000);
+ pollLocalMonitors();setInterval(pollLocalMonitors,500);
 }
 
 // Live preview stays on this PC and captures only OBS Virtual Camera.

@@ -243,10 +243,11 @@ class Feed:
         obs=None
         while True:
             try:
+                cycle_started=time.monotonic()
                 reload_reader_if_changed()
                 if obs is None:obs=OBS(self.args.host,self.args.obs_port,os.environ.get('OBS_PASSWORD',''))
                 self.process(obs.capture(self.args.source))
-                time.sleep(self.args.interval)
+                time.sleep(max(0,self.args.interval-(time.monotonic()-cycle_started)))
             except Exception as exc:
                 logging.warning('OBS: %s',exc)
                 if obs:

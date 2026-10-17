@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $PanelRoot = 'C:\PanelGo'
-$BundleVersion = '2026.10.17-render-video-3'
+$BundleVersion = '2026.10.17-clock-fast-4'
 $TempFolder = Join-Path $env:TEMP ('PanelGo-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $TempFolder | Out-Null
 Write-Host 'Preparando Panel Go. OBS y la transmision siguen abiertos.' -ForegroundColor Cyan
@@ -61,6 +61,11 @@ if (-not $ExistingReader) {
     $Listener = Get-NetTCPConnection -LocalPort 8771 -State Listen -ErrorAction SilentlyContinue
     if ($Listener) { throw 'El puerto del panel esta ocupado por otro lector. Cerra ese lector y abri Panel Go otra vez.' }
     Start-Process -FilePath $RuntimePython -ArgumentList '-u agent.py' -WorkingDirectory $PanelRoot -WindowStyle Hidden -RedirectStandardOutput (Join-Path $PanelRoot 'lector.log') -RedirectStandardError (Join-Path $PanelRoot 'lector-error.log') | Out-Null
+}
+if ($NeedsUpdate) {
+    $ReaderReady = $false
+    for ($Attempt=0; $Attempt -lt 20; $Attempt++) { try { $ReaderState=Invoke-RestMethod 'http://127.0.0.1:8771/api/state' -TimeoutSec 1; $ReaderReady=$ReaderState.service -eq 'club-estrella'; if ($ReaderReady) { break } } catch {}; Start-Sleep -Milliseconds 250 }
+    if ($ReaderReady) { & $RuntimePython (Join-Path $PanelRoot 'refresh_graphic.py') }
 }
 Start-Process 'https://clubestrella-panel.onrender.com'
 Write-Host 'Panel Go iniciado. Abrir OBS si todavia esta cerrado.' -ForegroundColor Green
