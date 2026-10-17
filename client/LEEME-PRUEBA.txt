@@ -1,0 +1,38 @@
+CLUB ESTRELLA - PRUEBA DE VIDEO CONTINUO EN LA PC DEL CLUB
+
+1. Extraer TODO este ZIP en una carpeta de la PC que ejecuta OBS.
+   Requiere Windows de 64 bits y Python 3.10 o posterior.
+   Si falta Python: https://www.python.org/downloads/windows/
+   Al instalarlo, marcar Add Python to PATH.
+
+2. Abrir OBS. Verificar que se vean las dos camaras.
+   Herramientas > Ajustes del servidor WebSocket: habilitado, puerto 4455.
+   Anotar su clave si tiene autenticacion. No hace falta cambiar escenas.
+   Las fuentes esperadas son Camara 2 (tablero) y camara 01 (juego).
+   La camara del juego debe ser una fuente multimedia RTSP, preferentemente H.264.
+
+3. Ejecutar PREPARAR-PRUEBA.cmd una sola vez, con internet.
+   Instala las dependencias y pide la clave de OBS y los nombres de fuentes.
+   Enter acepta los nombres indicados arriba. La clave queda solo en esta PC.
+
+4. Detener el lector anterior si usa el puerto 8771, sin cerrar OBS.
+   Ejecutar PROBAR-VIDEO.cmd. Mantener abierta su ventana.
+   Se abre http://127.0.0.1:8771/ en el navegador.
+   Usar Chrome o Edge actualizado si el navegador habitual no reproduce video.
+
+5. Probar durante 2 o 3 minutos:
+   - La camara del juego debe mostrar movimiento continuo, junto al tablero.
+   - El indicador de fps debe superar la cadencia anterior de una captura/segundo.
+     La cifra depende de la camara, el navegador y la PC; no se fuerza a 25 fps.
+   - Comparar reloj, local, visita y periodo con el tablero real.
+   - Comprobar que el juego sigue moviendose mientras cambian los puntajes.
+
+Para detener: Ctrl+C en la ventana del lector. Para repetir: PROBAR-VIDEO.cmd.
+Si la configuracion es incorrecta, ejecutar de nuevo CONFIGURAR-PRUEBA.ps1.
+Si aparece video sin conexion, revisar que esta PC acceda a la camara RTSP.
+No compartir prueba-local.json ni la carpeta .runtime: contienen datos privados.
+
+Esta prueba es local: no necesita Render ni ZeroTier y no envia video a internet.
+El lector consulta OBS; no cambia escenas, fuentes ni la transmision.
+Validado con una senal sintetica H.264 de 25 fps. Falta validar la camara real
+desde la PC del club, incluida su capacidad de aceptar otra conexion RTSP.

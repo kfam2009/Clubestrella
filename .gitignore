@@ -3,6 +3,10 @@ node_modules/
 .env.*
 !.env.example
 client/config.json
+client/prueba-local.json
+client/.runtime/
+client/tools/*.exe
+client/tools/*.zip
 client/.venv/
 __pycache__/
 *.pyc

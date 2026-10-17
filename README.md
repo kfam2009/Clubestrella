@@ -25,7 +25,15 @@ La configuración debe tener **una sola instancia**: el último estado se mantie
 5. Ejecutar `client/INICIAR.cmd`. Abre un monitor local en `http://127.0.0.1:8771/` y empieza a enviar lecturas a Render.
 6. Mantener abierta la consola del lector durante el partido. Cerrar la consola detiene el lector. Si ya hay otro panel usando el puerto `8771`, detenerlo antes de iniciar este.
 
-El monitor local muestra el tablero y la cámara del juego (`camara 01`) uno al lado del otro. Las imágenes del juego se renuevan aproximadamente una vez por segundo; es un monitor de capturas, no video fluido. Se consultan por separado y no demoran el lector del marcador. Ambas cámaras se ven en la PC del cliente; Render sigue recibiendo únicamente los datos.
+El monitor local muestra el tablero y la cámara del juego (`camara 01`) uno al lado del otro. El juego se reproduce como video continuo RTSP mediante go2rtc y MSE/WebSocket, independientemente de las capturas usadas para leer el marcador. La fuente del juego debe ser RTSP, preferentemente H.264; la compatibilidad depende del códec y del navegador. Usar Chrome o Edge actualizado. La cámara debe admitir una conexión adicional desde la PC. Render recibe únicamente los datos del marcador.
+
+El instalador obtiene go2rtc 1.9.14 de su repositorio oficial y verifica SHA-256. El reproductor y la licencia MIT se incluyen en `client/vendor`. El servicio de video escucha solo en localhost y su API requiere una clave aleatoria. El navegador accede únicamente al stream del juego a través del lector; no recibe la dirección ni las credenciales de la cámara. `client/.runtime` contiene la configuración privada temporal y está excluida de Git.
+
+## Probar video sin configurar Render
+
+En la misma PC de OBS, ejecutar `client/PREPARAR-PRUEBA.cmd` una vez y luego `client/PROBAR-VIDEO.cmd`. El primero instala los componentes y pide la clave de OBS y los nombres de las fuentes. El segundo abre `http://127.0.0.1:8771/` en modo local, sin enviar datos a Render. Detener primero otro lector si está usando ese puerto. Mantener OBS abierto y la consola del lector abierta durante la prueba. Para detener, pulsar Ctrl+C en esa consola.
+
+Comparar el reloj, ambos puntajes y el período durante 2 o 3 minutos, mientras se comprueba el movimiento continuo del juego. El indicador muestra los fps reproducidos; su valor depende de la cámara y la PC. Ver `client/LEEME-PRUEBA.txt`. La reproducción se validó localmente con una señal sintética H.264 de 25 fps; falta la prueba de la cámara real desde la red del club. No se necesita ZeroTier.
 
 Para cambiar la configuración, ejecutar `client/CONFIGURAR.ps1` con PowerShell o editar el archivo local `client/config.json`. Ese archivo contiene claves privadas: está excluido de Git y no debe compartirse. Los valores de ejemplo están en `client/config.example.json`.
 

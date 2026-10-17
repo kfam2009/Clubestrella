@@ -14,28 +14,29 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from types import SimpleNamespace
 
-from core import Feed, GamePreview
+from core import Feed, OBS
+from continuous_video import ContinuousVideo
 
 ROOT = Path(__file__).resolve().parent
 
 
-def load_config(path):
-    config=json.loads(Path(path).read_text(encoding='utf-8-sig'))
+def load_config(path,local_only=False):
+    config=json.loads(Path(path).read_text(encoding='utf-8-sig')) if Path(path).exists() else {}
     cloud=config.get('cloud_url','').strip().rstrip('/')
     url=urllib.parse.urlsplit(cloud)
     local=url.hostname in ('localhost','127.0.0.1')
-    if not url.hostname or url.username or url.password or url.query or url.fragment or url.path not in ('','/'):
+    if not local_only and (not url.hostname or url.username or url.password or url.query or url.fragment or url.path not in ('','/')):
         raise ValueError('Usar la URL base del panel, sin ruta, usuario ni clave.')
-    if url.scheme!='https' and not (local and url.scheme=='http'):
+    if not local_only and url.scheme!='https' and not (local and url.scheme=='http'):
         raise ValueError('La URL de Render debe usar https://')
     token=config.get('ingest_token','')
-    if not isinstance(token,str) or len(token)<32 or 'REPLACE_' in token:
+    if not local_only and (not isinstance(token,str) or len(token)<32 or 'REPLACE_' in token):
         raise ValueError('Configurar la clave INGEST_TOKEN del servicio de Render.')
     if config.get('obs_host','127.0.0.1') not in ('127.0.0.1','localhost'):
         raise ValueError('Este lector debe ejecutarse en la misma PC que OBS.')
     port=int(config.get('obs_port',4455))
     if not 1<=port<=65535:raise ValueError('Puerto OBS invalido')
-    return {**config,'cloud_url':cloud,'ingest_token':token,'obs_port':port}
+    return {**config,'cloud_url':'' if local_only else cloud,'ingest_token':token,'obs_port':port}
 
 
 class NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -71,14 +72,18 @@ def local_server(feed,uplink,game,port):
 <title>Club Estrella - Lector local</title><style>body{margin:32px auto;max-width:850px;padding:0 20px;background:#101620;color:#eef2f8;font:16px Arial}h1{color:#ffd348}section{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}section div{padding:20px 10px;background:#1d2939;border-radius:10px}strong{display:block;margin-top:12px;font-size:34px}img{width:100%;max-height:300px;object-fit:contain;background:#080b10;margin:20px 0}a{color:#76e4b2}.stale{opacity:.45}@media(max-width:500px){section{grid-template-columns:1fr 1fr}}</style>
 <h1>Club Estrella · lector local</h1><p id="status">Conectando con OBS local...</p><p id="cloud"></p>
 <section><div>Reloj<strong id="clock">--:--</strong></div><div>Local<strong id="homeScore">--</strong></div><div>Visita<strong id="awayScore">--</strong></div><div>Período<strong id="period">--</strong></div></section>
-<style>.monitors{display:grid;grid-template-columns:1fr 1.7fr;gap:15px;margin-top:24px}.monitors figure{margin:0;min-width:0}.monitors img{height:240px;object-fit:contain;margin:8px 0;background:#050505}figcaption{font-weight:bold}#gameStatus{font-size:12px;font-weight:normal}@media(max-width:520px){.monitors{grid-template-columns:1fr}}</style>
-<div class="monitors"><figure><figcaption>Tablero</figcaption><img id="board" alt="Última captura del tablero"></figure><figure><figcaption>Juego <span id="gameStatus">Conectando</span></figcaption><img id="game" alt="Cámara de la cancha"></figure></div>
-<p><a href="CLOUD_URL" target="_blank" rel="noopener">Abrir panel en Render</a></p><small>OBS local · sin ZeroTier · solo lectura · imágenes renovadas aproximadamente cada segundo</small>
-<script>let revision=-1,gameRevision=-1;async function poll(){try{const r=await fetch('/api/state',{cache:'no-store',signal:AbortSignal.timeout(2500)});const s=await r.json();for(const k of ['clock','homeScore','awayScore','period']){document.getElementById(k).textContent=s[k];document.getElementById(k).classList.toggle('stale',!s.fields[k].valid);}document.getElementById('status').textContent=s.status+' · lector '+s.version;document.getElementById('cloud').textContent=s.uplink;if(s.revision!==revision){revision=s.revision;document.getElementById('board').src='/board.png?r='+revision;}document.getElementById('gameStatus').textContent=s.gameConnected?'Actualización automática':'Sin actualización';document.getElementById('game').classList.toggle('stale',!s.gameConnected);if(s.gameRevision!==gameRevision){gameRevision=s.gameRevision;document.getElementById('game').src='/game.jpg?r='+gameRevision;}}catch{document.getElementById('status').textContent='Sin conexión con el lector local';}finally{setTimeout(poll,1000)}}poll();</script></html>'''.replace('CLOUD_URL',html.escape(uplink.config['cloud_url'],quote=True))
+<style>.monitors{display:grid;grid-template-columns:1fr 1.7fr;gap:15px;margin-top:24px}.monitors figure{margin:0;min-width:0}.monitors img{height:240px;object-fit:contain;margin:8px 0;background:#050505}figcaption{font-weight:bold}#gameStatus{font-size:12px;font-weight:normal}club-game{display:block;height:240px;background:#050505;margin:8px 0}club-game video{object-fit:contain}@media(max-width:520px){.monitors{grid-template-columns:1fr}}</style>
+<div class="monitors"><figure><figcaption>Tablero</figcaption><img id="board" alt="Última captura del tablero"></figure><figure><figcaption>Juego <span id="gameStatus">Conectando video continuo</span></figcaption><club-game data-enabled="true" aria-label="Video continuo del juego"></club-game></figure></div>
+<p id="videoBackend"></p><p><a href="CLOUD_URL" target="_blank" rel="noopener">Abrir panel en Render</a></p><small>OBS local · sin ZeroTier · cámara en video continuo · lectura del tablero independiente</small>
+<script type="module" src="/video-monitor.js"></script>
+<script>let revision=-1;async function poll(){try{const r=await fetch('/api/state',{cache:'no-store',signal:AbortSignal.timeout(2500)});const s=await r.json();for(const k of ['clock','homeScore','awayScore','period']){document.getElementById(k).textContent=s[k];document.getElementById(k).classList.toggle('stale',!s.fields[k].valid);}document.getElementById('status').textContent=s.status+' · lector '+s.version;document.getElementById('cloud').textContent=s.uplink;document.getElementById('videoBackend').textContent=s.gameStatus||'';if(s.revision!==revision){revision=s.revision;document.getElementById('board').src='/board.png?r='+revision;}}catch{document.getElementById('status').textContent='Sin conexión con el lector local';}finally{setTimeout(poll,1000)}}poll();</script></html>'''.replace('CLOUD_URL',html.escape(uplink.config['cloud_url'],quote=True))
+    if not uplink.config['cloud_url']:
+        page=page.replace('<a href="" target="_blank" rel="noopener">Abrir panel en Render</a>','Prueba local · no se envian datos a Render')
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
         def do_GET(self):
             route=self.path.split('?',1)[0]
+            if route=='/video/ws':game.forward_websocket(self);return
             if route=='/':data=page.encode();kind='text/html; charset=utf-8'
             elif route=='/api/state':
                 state=feed.snapshot();state.update(game.snapshot());state['uplink']=uplink.message
@@ -86,32 +91,34 @@ def local_server(feed,uplink,game,port):
             elif route=='/board.png':
                 with feed.lock:data=feed.board
                 kind='image/png'
-            elif route=='/game.jpg':
-                with game.lock:data=game.image
-                kind='image/jpeg'
+            elif route in ('/video-monitor.js','/vendor/video-rtc.js'):
+                data=(ROOT/route.lstrip('/')).read_bytes();kind='text/javascript; charset=utf-8'
             else:self.send_error(404);return
             self.send_response(200);self.send_header('Content-Type',kind);self.send_header('Cache-Control','no-store');self.send_header('Content-Length',str(len(data)));self.end_headers();self.wfile.write(data)
     return ThreadingHTTPServer(('127.0.0.1',port),Handler)
 
 
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--config',default=str(ROOT/'config.json'));parser.add_argument('--no-browser',action='store_true');args=parser.parse_args()
-    try:config=load_config(args.config)
+    parser=argparse.ArgumentParser();parser.add_argument('--config',default=str(ROOT/'config.json'));parser.add_argument('--no-browser',action='store_true');parser.add_argument('--local-only',action='store_true');args=parser.parse_args()
+    try:config=load_config(args.config,args.local_only)
     except Exception as exc:raise SystemExit('Configuracion invalida: '+str(exc))
     if config.get('obs_password'):os.environ['OBS_PASSWORD']=config['obs_password']
-    feed=Feed(SimpleNamespace(host='127.0.0.1',obs_port=config['obs_port'],source=config.get('source','Camara 2'),game_source=config.get('game_source','camara 01'),interval=.3))
+    feed=Feed(SimpleNamespace(host='127.0.0.1',obs_port=config['obs_port'],source=config.get('source','Camara 2'),game_source=config.get('game_source','camara 01'),interval=.3,
+                             game_rtsp=config.get('game_rtsp',''),video_port=int(config.get('video_port',1987))))
     uplink=Uplink(feed,config)
-    game=GamePreview(feed.args)
+    game=ContinuousVideo(feed.args,OBS,ROOT)
     port=int(config.get('local_port',8771))
     server=local_server(feed,uplink,game,port)
-    threading.Thread(target=feed.run,daemon=True).start();threading.Thread(target=uplink.run,daemon=True).start()
+    threading.Thread(target=feed.run,daemon=True).start()
+    if not args.local_only:threading.Thread(target=uplink.run,daemon=True).start()
+    else:uplink.message='Prueba local · sin envio a Render'
     threading.Thread(target=game.run,daemon=True).start()
     address=f'http://127.0.0.1:{port}/'
     print('Lector activo: '+address,flush=True)
     if not args.no_browser:webbrowser.open(address)
     try:server.serve_forever()
     except KeyboardInterrupt:pass
-    finally:server.server_close()
+    finally:game.close();server.server_close()
 
 
 if __name__=='__main__':

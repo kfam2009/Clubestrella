@@ -1,3 +1,4 @@
+param([switch]$PruebaLocal)
 $ErrorActionPreference = 'Stop'
 $ClientRoot = $PSScriptRoot
 $Python = $null
@@ -17,5 +18,11 @@ if ($LASTEXITCODE -ne 0) { throw 'No se pudo crear el entorno de Python.' }
 $ClientPython = Join-Path $ClientRoot '.venv\Scripts\python.exe'
 & $ClientPython -m pip install -r (Join-Path $ClientRoot 'requirements.txt')
 if ($LASTEXITCODE -ne 0) { throw 'No se pudieron instalar Pillow y NumPy.' }
-& (Join-Path $ClientRoot 'CONFIGURAR.ps1')
-Write-Host 'Instalado. Ejecutar INICIAR.cmd para abrir el lector.' -ForegroundColor Green
+& (Join-Path $ClientRoot 'INSTALAR-VIDEO.ps1')
+if ($PruebaLocal) {
+    & (Join-Path $ClientRoot 'CONFIGURAR-PRUEBA.ps1')
+    Write-Host 'Listo. Ejecutar PROBAR-VIDEO.cmd.' -ForegroundColor Green
+} else {
+    & (Join-Path $ClientRoot 'CONFIGURAR.ps1')
+    Write-Host 'Instalado. Ejecutar INICIAR.cmd para abrir el lector.' -ForegroundColor Green
+}

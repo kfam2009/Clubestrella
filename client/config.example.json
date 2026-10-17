@@ -6,5 +6,7 @@
   "obs_password": "",
   "source": "Camara 2",
   "game_source": "camara 01",
+  "game_rtsp": "",
+  "video_port": 1987,
   "local_port": 8771
 }
