@@ -16,7 +16,7 @@ except ImportError:
 SOURCE='Panel Go - Marcador Estrella'
 SETTINGS_PATH=Path(__file__).with_name('.graphic-settings.json')
 SETTINGS_LOCK=threading.Lock()
-SETTING_KEYS={'homeName','awayName','homeLogo','awayLogo','tournament','category'}
+SETTING_KEYS={'homeName','awayName','homeLogo','awayLogo','eventLogo','tournament','category'}
 
 def read_graphic_settings(path=None):
     try:return json.loads((path or SETTINGS_PATH).read_text(encoding='utf-8'))

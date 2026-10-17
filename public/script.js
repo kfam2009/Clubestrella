@@ -1,6 +1,6 @@
 const defaults = {
   homeName: 'ESTRELLA', awayName: 'VISITA', homeScore: '--', awayScore: '--',
-  homeLogo: '', awayLogo: '', period: '--', clock: '--:--', shotClock: '',
+  homeLogo: '', awayLogo: '', eventLogo: '', period: '--', clock: '--:--', shotClock: '',
   tournament: 'CLUB ESTRELLA', category: '',
 };
 const liveKeys = ['clock','homeScore','awayScore','period'];
@@ -22,7 +22,7 @@ function render() {
     const value = state[img.dataset.logo] || '';
     img.hidden = !value;
     if (value && img.getAttribute('src') !== value) img.src = value;
-    img.closest('.team-logo').hidden = false;
+    const holder=img.closest('.team-logo'); if(holder) holder.hidden = false;
   });
   document.querySelectorAll('input:not([type=file])').forEach(input => {
     if (input.id in state && document.activeElement !== input) input.value = state[input.id];
@@ -103,7 +103,7 @@ document.querySelectorAll('[data-scorebug]').forEach(target => target.replaceChi
 document.querySelectorAll('input:not([type=file])').forEach(input => input.addEventListener('input', () => {
   if (input.id in state && !(liveMode && liveKeys.includes(input.id))) {state[input.id] = input.value.trim();persist();render();}
 }));
-for (const [id,key] of Object.entries({homeLogoFile:'homeLogo',awayLogoFile:'awayLogo'})) {
+for (const [id,key] of Object.entries({homeLogoFile:'homeLogo',awayLogoFile:'awayLogo',eventLogoFile:'eventLogo'})) {
   document.getElementById(id)?.addEventListener('change', e => {
     if (!e.target.files?.[0]) return;
     const reader = new FileReader();reader.onload = () => {state[key] = reader.result;persist();render();};reader.readAsDataURL(e.target.files[0]);
@@ -174,7 +174,7 @@ async function syncOBSSettings() {
  if(!obsGraphicToken){obsSettingsButton.textContent='Sin conexión con OBS';return false;}
  obsSettingsButton.disabled=true;
  try{
-  const settings=Object.fromEntries(['homeName','awayName','homeLogo','awayLogo','tournament','category'].map(k=>[k,state[k]||'']));
+  const settings=Object.fromEntries(['homeName','awayName','homeLogo','awayLogo','eventLogo','tournament','category'].map(k=>[k,state[k]||'']));
   const r=await fetch('http://127.0.0.1:8774/settings',{method:'POST',headers:{'Content-Type':'application/json','X-Panel-Token':obsGraphicToken},body:JSON.stringify(settings),signal:AbortSignal.timeout(5000)});
   if(!r.ok)throw Error();
   localStorage.setItem('club-estrella-obs-linked','1');obsSettingsButton.textContent='Datos enviados a OBS ✓';return true;

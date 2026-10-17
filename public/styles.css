@@ -504,3 +504,8 @@ input[readonly] { color:#77e5b2; background:#182321; border-color:#35544b; }
 }
 
 .control-page #obsSettingsButton{width:100%;margin-top:12px;padding:10px 8px;border:1px solid #465162;background:#202a38;color:#e6edf7;border-radius:6px;font:600 11px Segoe UI,Arial,sans-serif;cursor:pointer}.control-page #obsSettingsButton:disabled{opacity:.5}
+
+.info-box { display:flex; align-items:center; gap:8px; }
+.info-copy { flex:1; min-width:0; display:flex; flex-direction:column; gap:5px; }
+.event-logo { display:block; width:54px; height:54px; flex-shrink:0; object-fit:contain; }
+.event-logo[hidden] { display:none; }
