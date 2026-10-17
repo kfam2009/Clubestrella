@@ -45,5 +45,19 @@ class ControlTests(unittest.TestCase):
         obs=GraphicsOBS.__new__(GraphicsOBS)
         with self.assertRaises(ValueError):obs.request('StopStream')
         with self.assertRaises(ValueError):obs.request('CreateInput',{'inputName':SOURCE,'sceneItemEnabled':True})
+        with self.assertRaises(ValueError):obs.request('StopVirtualCam')
+    def test_virtual_camera_starts_only_on_explicit_request(self):
+        class VirtualOBS(FakeOBS):
+            active=False
+            def request(self,kind,data=None):
+                self.calls.append((kind,data))
+                if kind=='StartVirtualCam':self.active=True
+                return {'outputActive':self.active}
+        fake=VirtualOBS();control=self.control(fake)
+        self.assertTrue(control.start_virtual_camera()['active'])
+        self.assertEqual([kind for kind,_ in fake.calls],['GetVirtualCamStatus','StartVirtualCam','GetVirtualCamStatus'])
+        fake.calls.clear()
+        self.assertTrue(control.start_virtual_camera()['active'])
+        self.assertEqual([kind for kind,_ in fake.calls],['GetVirtualCamStatus','GetVirtualCamStatus'])
 
 if __name__=='__main__':unittest.main()

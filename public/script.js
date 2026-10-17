@@ -13,6 +13,7 @@ for (const [key,value] of params) if (key in defaults && (!liveMode || !liveKeys
 if (liveMode) for (const key of liveKeys) state[key] = defaults[key];
 let lastFeed = null, lastEvent = 0, polling = false;
 let remoteMonitorsActive = false;
+let programStream=null;
 
 function render() {
   document.querySelectorAll('[data-bind]').forEach(node => {
@@ -77,9 +78,9 @@ function updateMonitors(live) {
     customElements.whenDefined('club-game').then(() => { player.src = '/video/ws'; });
   }
   if (continuous && game) game.hidden = true;
-  if (gameStatus && !continuous) gameStatus.textContent = live.gameConnected ? (live.gameView === 'program' ? 'Programa · sin audio' : 'Capturas de respaldo') : 'Sin actualización';
+  if (gameStatus && !continuous && !programStream) gameStatus.textContent = live.gameConnected ? (live.gameView === 'program' ? 'Programa · sin audio' : 'Capturas de respaldo') : 'Sin actualización';
   if (gameStatus && continuous && !live.gameReady) gameStatus.textContent = live.gameStatus || 'Preparando video continuo';
-  if (game && !continuous) {
+  if (game && !continuous && !programStream) {
     game.classList.toggle('value-stale', !live.gameConnected);
     if (live.gameImage && live.gameRevision && game.dataset.revision !== String(live.gameRevision)) {
       game.hidden = false; game.src = live.gameImage + '?r=' + live.gameRevision; game.dataset.revision = live.gameRevision;
@@ -225,3 +226,48 @@ if(location.hostname==='clubestrella-panel.onrender.com') {
  }
  pollLocalMonitors();setInterval(pollLocalMonitors,2000);
 }
+
+// Live preview stays on this PC and captures only OBS Virtual Camera.
+function mountProgramVideo(){
+ const image=document.getElementById('gamePreview');if(!image)return;
+ const frame=image.closest('.camera-image'),caption=frame?.previousElementSibling;if(!frame||!caption)return;
+ const video=document.createElement('video');video.id='programLiveVideo';video.autoplay=true;video.muted=true;video.playsInline=true;video.hidden=true;frame.append(video);
+ const button=document.createElement('button');button.type='button';button.className='monitor-video-button';button.textContent='Video fluido';caption.append(button);
+ function stopPreview(){
+  if(programStream)programStream.getTracks().forEach(track=>track.stop());
+  programStream=null;video.srcObject=null;video.hidden=true;button.disabled=false;button.textContent='Video fluido';
+ }
+ button.addEventListener('click',async()=>{
+  const status=document.getElementById('gameStatus');
+  if(programStream){stopPreview();if(status)status.textContent='Capturas de respaldo';return;}
+  button.disabled=true;let acquired=null;
+  try{
+   if(!navigator.mediaDevices?.getUserMedia)throw Error('Abrí el panel en Chrome o Edge actualizado.');
+   if(status)status.textContent='Preparando video de OBS...';
+   await refreshOBSGraphic();if(!obsGraphicToken)throw Error('Abrí el lector actualizado en esta PC.');
+   const response=await fetch('http://127.0.0.1:8774/virtual-camera',{method:'POST',headers:{'Content-Type':'application/json','X-Panel-Token':obsGraphicToken},body:'{}',signal:AbortSignal.timeout(10000)});
+   if(!response.ok)throw Error('Actualizá el lector con el BAT de video fluido.');
+   let devices=await navigator.mediaDevices.enumerateDevices();
+   const findOBS=()=>devices.find(device=>device.kind==='videoinput'&&/obs.*(virtual|camera)|obs-camera/i.test(device.label));
+   let obsDevice=findOBS();
+   if(!obsDevice){
+    if(status)status.textContent='Permití el acceso a cámaras para encontrar OBS Virtual Camera.';
+    const permission=await navigator.mediaDevices.getUserMedia({video:true,audio:false});
+    permission.getTracks().forEach(track=>track.stop());
+    devices=await navigator.mediaDevices.enumerateDevices();obsDevice=findOBS();
+   }
+   if(!obsDevice)throw Error('No aparece OBS Virtual Camera. Revisá la instalación de OBS en esta PC.');
+   acquired=await navigator.mediaDevices.getUserMedia({audio:false,video:{deviceId:{exact:obsDevice.deviceId},width:{ideal:1280},height:{ideal:720},frameRate:{ideal:25,max:30}}});
+   programStream=acquired;video.srcObject=programStream;await video.play();
+   video.hidden=false;image.hidden=true;button.textContent='Volver a capturas';
+   const fps=programStream.getVideoTracks()[0]?.getSettings().frameRate;
+   if(status)status.textContent='Video de OBS · '+(fps?Math.round(fps)+' fps · ':'')+'sin audio';
+   programStream.getVideoTracks()[0]?.addEventListener('ended',()=>{stopPreview();if(status)status.textContent='Se desconectó el video de OBS';},{once:true});
+  }catch(error){
+   acquired?.getTracks().forEach(track=>track.stop());stopPreview();
+   if(status)status.textContent=error.name==='NotAllowedError'?'Permití el acceso a cámaras para ver OBS.':error.message||'No se pudo abrir el video de OBS.';
+  }finally{button.disabled=false;}
+ });
+ window.addEventListener('pagehide',stopPreview,{once:true});
+}
+mountProgramVideo();

@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $PanelRoot = 'C:\PanelGo'
-$BundleVersion = '2026.10.17-render-monitores-2'
+$BundleVersion = '2026.10.17-render-video-3'
 $TempFolder = Join-Path $env:TEMP ('PanelGo-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $TempFolder | Out-Null
 Write-Host 'Preparando Panel Go. OBS y la transmision siguen abiertos.' -ForegroundColor Cyan

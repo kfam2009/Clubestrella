@@ -36,8 +36,8 @@ def save_graphic_settings(values,path=None):
         temporary.write_text(json.dumps(merged,ensure_ascii=False),encoding='utf-8')
         temporary.replace(target)
     return merged
-READ={'GetCurrentProgramScene','GetSceneItemList','GetInputList','GetVideoSettings','GetSceneItemEnabled'}
-WRITE={'CreateInput','SetSceneItemTransform','SetSceneItemEnabled'}
+READ={'GetCurrentProgramScene','GetSceneItemList','GetInputList','GetVideoSettings','GetSceneItemEnabled','GetVirtualCamStatus'}
+WRITE={'CreateInput','SetSceneItemTransform','SetSceneItemEnabled','StartVirtualCam'}
 
 class GraphicsOBS(OBS):
     def request(self,kind,data=None):
@@ -61,6 +61,13 @@ class GraphicControl:
         scene=self.scene or obs.request('GetCurrentProgramScene')['currentProgramSceneName']
         items=obs.request('GetSceneItemList',{'sceneName':scene})['sceneItems']
         return scene,next((item for item in items if item['sourceName']==SOURCE),None)
+    def start_virtual_camera(self):
+        with self.lock:
+            obs=self.connect()
+            try:
+                if not obs.request('GetVirtualCamStatus')['outputActive']:obs.request('StartVirtualCam')
+                return {'active':obs.request('GetVirtualCamStatus')['outputActive']}
+            finally:obs.close()
     def status(self):
         with self.lock:
             obs=self.connect()
@@ -118,11 +125,12 @@ def make_control_server(control,port=8774,graphic_url='http://127.0.0.1:8771/gra
             except Exception:self.reply(503,{'ready':False,'enabled':False,'error':'Sin conexion con OBS'})
         def do_POST(self):
             if self.headers.get('Origin') not in origins or not secrets.compare_digest(self.headers.get('X-Panel-Token',''),token):self.reply(403,{'error':'Origen no permitido'});return
-            if self.path not in ('/visibility','/install','/settings'):self.reply(404,{});return
+            if self.path not in ('/visibility','/install','/settings','/virtual-camera'):self.reply(404,{});return
             try:
                 length=int(self.headers.get('Content-Length','0'))
                 if not 0<length<=(3100000 if self.path=='/settings' else 512) or self.headers.get('Content-Type')!='application/json':raise ValueError()
                 data=json.loads(self.rfile.read(length))
+                if self.path=='/virtual-camera':self.reply(200,control.start_virtual_camera());return
                 if self.path=='/settings':self.reply(200,{'ok':True,'settings':save_graphic_settings(data)});return
                 result=control.install(graphic_url) if self.path=='/install' else control.set_enabled(data.get('enabled'))
                 self.reply(200,result)
