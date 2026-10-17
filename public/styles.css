@@ -385,7 +385,8 @@ select {
 .team-logo[hidden] { display:none; }
 .fbb-scorebug:has(.team-logo:not([hidden])) { grid-template-columns:86px 72px 288px 94px 72px 288px 94px 100px 160px 306px; }
 .team-name { font-size:32px; padding:0 16px; }
-.fbb-mark { color:#ffd348; font-size:30px; }
+.fbb-mark { padding:3px; }
+.fbb-mark img { display:block; width:100%; height:100%; min-height:0; object-fit:contain; }
 .info-box { padding:0 12px; }
 .info-box strong,.info-box span { font-size:19px; }
 #boardPreview { max-height:300px; }
