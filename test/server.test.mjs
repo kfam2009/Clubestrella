@@ -11,6 +11,19 @@ const sample = () => ({
   fields: Object.fromEntries(['clock','homeScore','awayScore','period'].map(k => [k,{age:0.2,valid:true}])),
 });
 
+test('an unlit board enters standby and connection loss still becomes stale', () => {
+  let now = 0;
+  const store = new ScoreStore(() => now);
+  const input = { ...sample(), clock: '10:00', homeScore: '0', awayScore: '0', boardOff: true };
+  store.accept(input);
+  assert.equal(store.snapshot().ocrStatus, 'standby');
+  assert.equal(store.snapshot().homeScore, '0');
+  now = 7000;
+  assert.equal(store.snapshot().connected, false);
+  assert.equal(store.snapshot().ocrStatus, 'waiting');
+  assert.equal(normalize({ ...input, homeScore: '55' }).boardOff, false);
+});
+
 class Response extends EventEmitter {
   headers = {}; chunks = []; status = null; headersSent = false; writableEnded = false;
   setHeader(k,v) {this.headers[k] = v;}

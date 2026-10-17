@@ -188,6 +188,7 @@ class Feed:
         self.values={'clock':'--:--','homeScore':'--','awayScore':'--','period':'--'}
         self.confirmed={};self.pending={};self.connected=False;self.captured=0.;self.board=b'';self.error='Esperando OBS'
         self.last_samples={};self.digits={}
+        self.board_off=False;self.dark_since=None
 
     def snapshot(self):
         now=time.time()
@@ -196,17 +197,30 @@ class Feed:
                        'valid':k in self.confirmed and now-self.confirmed[k]<4} for k in KEYS}
             fresh=self.connected and now-self.captured<4
             good=fresh and all(v['valid'] for v in fields.values())
-            return {**self.values,'service':'club-estrella','version':reader_module.READER_VERSION,'pid':os.getpid(),'connected':fresh,'ocrStatus':'ok' if good else 'waiting',
-                    'status':'Lectura automatica activa' if good else ('Verificando lectura del tablero' if fresh else self.error),
+            return {**self.values,'service':'club-estrella','version':reader_module.READER_VERSION,'pid':os.getpid(),'connected':fresh,'ocrStatus':'standby' if fresh and self.board_off else 'ok' if good else 'waiting','boardOff':fresh and self.board_off,
+                    'status':'Tablero apagado · listo para iniciar' if fresh and self.board_off else 'Lectura automatica activa' if good else ('Verificando lectura del tablero' if fresh else self.error),
                     'fields':fields,'updatedAt':datetime.fromtimestamp(self.captured,timezone.utc).isoformat() if self.captured else None,
                     'boardImage':'board.png','source':self.args.source,'revision':self.revision,'digits':self.digits}
 
     def process(self,im,now=None):
         now=now or time.time();raw,digits=read_values(im)
+        power=reader_module.board_power_state(im,digits)
         out=io.BytesIO();im.crop((1360,350,1700,610)).save(out,format='PNG')
         with self.lock:
             self.board=out.getvalue();self.connected=True;self.captured=now;self.digits=digits
             self.error='Sin capturas recientes; esperando OBS'
+            if power=='off':
+                if self.dark_since is None:self.dark_since=now
+                if now-self.dark_since>=2:
+                    self.board_off=True
+                    self.values.update(clock='10:00',homeScore='0',awayScore='0')
+                    self.pending.clear();self.last_samples.clear()
+                    for key in ('clock','homeScore','awayScore'):self.confirmed[key]=now
+                    self.revision+=1;self.lock.notify_all();return
+            else:
+                self.dark_since=None
+                if self.board_off:
+                    self.board_off=False;self.confirmed.clear();self.pending.clear();self.last_samples.clear()
             for key in KEYS:
                 value=raw.get(key)
                 if value is None:
@@ -240,6 +254,6 @@ class Feed:
                     except OSError:pass
                 obs=None
                 with self.lock:
-                    self.connected=False;self.pending.clear();self.error='Sin conexion con OBS; reintentando'
+                    self.connected=False;self.dark_since=None;self.pending.clear();self.error='Sin conexion con OBS; reintentando'
                     self.revision+=1;self.lock.notify_all()
                 time.sleep(2)

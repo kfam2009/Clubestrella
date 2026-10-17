@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw
 import numpy as np
 
-READER_VERSION = '2026.10.17.4'
+READER_VERSION = '2026.10.17.5'
 
 # Corners TL, TR, BR, BL in the native 1920x1080 camera frame.
 QUADS = {
@@ -24,6 +24,16 @@ def mask(im):
     a=np.asarray(im.convert('RGB')).astype(float)
     r,g,b=a[:,:,0],a[:,:,1],a[:,:,2]
     return (r>180)&(r>g*1.03)&(r>b*1.08)
+
+
+def board_power_state(im,digits=None):
+    """A visible board with all LEDs dark differs from an unreadable/black feed."""
+    if im.size!=(1920,1080):return 'unknown'
+    if digits and any(value is not None for value in digits.values()):return 'on'
+    if any(int(mask(warp(im,points)).sum())>=50 for points in QUADS.values()):return 'on'
+    board=np.asarray(im.crop((1360,350,1700,610)).convert('L'))
+    if float(board.mean())<10 or float(board.std())<8:return 'unknown'
+    return 'off'
 
 PROBES = {
     'a': (.43,.04,.60,.17),

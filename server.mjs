@@ -44,7 +44,8 @@ export function normalize(input) {
     fields[key] = { age, valid: field?.valid === true && age !== null && input[key] !== DEFAULTS[key] };
   }
   const captured = typeof input.updatedAt === 'string' && Number.isFinite(Date.parse(input.updatedAt)) ? input.updatedAt : null;
-  return { ...values, fields, connected: input.connected === true, updatedAt: captured };
+  const boardOff = input.boardOff === true && values.clock === '10:00' && values.homeScore === '0' && values.awayScore === '0';
+  return { ...values, fields, connected: input.connected === true, updatedAt: captured, boardOff };
 }
 
 export class ScoreStore extends EventEmitter {
@@ -60,10 +61,11 @@ export class ScoreStore extends EventEmitter {
       return [key, { age, valid: connected && previous.valid && age !== null && age < 5 }];
     }));
     const good = connected && Object.values(fields).every(field => field.valid);
+    const standby = connected && latest?.boardOff === true;
     return { ...DEFAULTS, ...(latest || {}), fields, connected,
       service: 'club-estrella', version: '1.0.0', source: 'OBS local del cliente',
-      revision: this.revision, ocrStatus: good ? 'ok' : 'waiting',
-      status: !latest ? 'Esperando lector de la PC del cliente' : good ? 'Lectura automatica activa' : connected ? 'Verificando lectura del tablero' : 'Lector sin conexion · ultimo dato recibido',
+      revision: this.revision, ocrStatus: standby ? 'standby' : good ? 'ok' : 'waiting',
+      status: !latest ? 'Esperando lector de la PC del cliente' : standby ? 'Tablero apagado · listo para iniciar' : good ? 'Lectura automatica activa' : connected ? 'Verificando lectura del tablero' : 'Lector sin conexion · ultimo dato recibido',
       boardImage: '',
     };
   }

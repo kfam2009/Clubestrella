@@ -54,7 +54,7 @@ En el panel local, **Aplicar nombres y escudos a OBS** comparte nombres, escudos
 
 Cambiar nombres, logos y textos desde el panel. **Abrir salida limpia** conserva esos ajustes en el enlace. También se guardan en el navegador; las pestañas del mismo navegador se sincronizan. No son ajustes globales compartidos entre navegadores.
 
-Las cifras se leen de capturas; no se extrapola un cronómetro. Si se pierde la lectura, el panel conserva el último dato, atenúa los campos atrasados y avisa **LECTURA EN PAUSA · ÚLTIMO DATO**. Al volver OBS o internet, el lector reintenta automáticamente y envía el estado más reciente.
+Las cifras se leen de capturas; no se extrapola un cronómetro. Cuando el tablero permanece visible con todos sus dígitos apagados durante al menos dos segundos, el lector muestra **Local 0, Visita 0 y reloj 10:00**. Al encenderse, retoma las lecturas confirmadas. Una imagen negra o uniforme de la cámara y la pérdida de conexión no disparan ese reinicio. Si se pierde la lectura, se conservan los datos y el panel informa su estado; la gráfica de transmisión no muestra el aviso de último dato. Al volver OBS o internet, el lector reintenta automáticamente y envía el estado más reciente.
 
 ## Alcance de la calibración
 

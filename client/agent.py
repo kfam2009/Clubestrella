@@ -55,7 +55,7 @@ class Uplink:
         while True:
             state=self.feed.snapshot()
             # Keep frames, source details, PID and credentials on the client PC.
-            payload={k:state[k] for k in ('clock','homeScore','awayScore','period','fields','connected','updatedAt')}
+            payload={k:state[k] for k in ('clock','homeScore','awayScore','period','fields','connected','updatedAt','boardOff')}
             request=urllib.request.Request(self.config['cloud_url']+'/api/ingest',data=json.dumps(payload).encode(),
                 headers={'Content-Type':'application/json','Authorization':'Bearer '+self.config['ingest_token']},method='POST')
             try:

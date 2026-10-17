@@ -136,7 +136,7 @@ def make_bridge(address,port,peer,root):
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
     def state():
         with opener.open('http://127.0.0.1:8771/api/state',timeout=3) as response:data=json.load(response)
-        return {**{k:v for k,v in data.items() if k in {'service','clock','homeScore','awayScore','period','fields','connected','ocrStatus','status','updatedAt','revision'}},'graphicSettings':read_graphic_settings()}
+        return {**{k:v for k,v in data.items() if k in {'service','clock','homeScore','awayScore','period','fields','connected','ocrStatus','status','updatedAt','revision','boardOff'}},'graphicSettings':read_graphic_settings()}
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
         def do_GET(self):

@@ -38,7 +38,7 @@ function render() {
 function showHealth() {
   if (!liveMode) return;
   const elapsed = Date.now() - lastEvent;
-  const healthy = lastFeed && elapsed < 4000 && lastFeed.connected && lastFeed.ocrStatus === 'ok';
+  const healthy = lastFeed && elapsed < 4000 && lastFeed.connected && ['ok','standby'].includes(lastFeed.ocrStatus);
   document.body.classList.toggle('feed-stale', !healthy);
   const status = document.getElementById('liveStatus');
   if (status) {
