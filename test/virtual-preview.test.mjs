@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const source=readFileSync(new URL('../public/script.js',import.meta.url),'utf8');
-const code=source.slice(source.indexOf('function mountProgramVideo(){'));
+const code=source.slice(source.indexOf('function mountProgramVideo(){'),source.indexOf('\nmountProgramVideo();')+'\nmountProgramVideo();'.length);
 function preview(devices){
  const calls=[],requests=[],tracks={stopped:0,stop(){this.stopped++;},getSettings:()=>({frameRate:25}),addEventListener(){}};
  const stream={getTracks:()=>[tracks],getVideoTracks:()=>[tracks]};

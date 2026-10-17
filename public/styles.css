@@ -566,3 +566,28 @@ club-game video { width:100%; height:100%; object-fit:contain; }
 }
 
 .camera-image #programLiveVideo{width:100%;height:100%;object-fit:contain;background:#07090d}.monitor-video-button{border:1px solid #485367;background:#222c3b;color:#f5f6fa;border-radius:4px;padding:3px 7px;font:600 10px Segoe UI,Arial,sans-serif;cursor:pointer}.monitor-video-button:disabled{opacity:.5}
+
+/* Give the monitors the remaining desktop height; retain compact OBS controls. */
+@media (min-width:1001px) and (max-width:1400px) and (max-height:850px) {
+ .control-page { grid-template-columns:252px minmax(0,1fr); grid-template-rows:46px minmax(0,1fr); }
+ .brand-lockup img { width:55px; height:35px; }
+ .brand-lockup strong { font-size:14px; }
+ .brand-lockup .eyebrow { margin-top:3px; font-size:7px; }
+ .control-page .preview-shell { display:grid; grid-template-rows:minmax(0,1fr) auto; gap:8px; padding:10px 14px; overflow:auto; justify-items:stretch; }
+ .control-page .output-card { width:100%; }
+ .control-page .workspace-title,.control-page .workspace-footer { display:none; }
+ .control-page .live-monitor { display:grid; grid-template-rows:42px 16px minmax(0,1fr) 12px; gap:6px; height:100%; min-height:0; }
+ .control-page .live-monitor dl { gap:7px; }
+ .control-page .live-monitor dl div { display:flex; align-items:center; justify-content:space-between; min-height:42px; padding:5px 10px; gap:7px; border-radius:7px; }
+ .control-page .live-monitor dt { font-size:8px; letter-spacing:.5px; }
+ .control-page .live-monitor dd { font-size:26px; letter-spacing:-1px; }
+ .control-page .live-head,.control-page .live-head strong,.control-page .live-head span { font-size:9px; }
+ .control-page .camera-pair { min-height:0; height:100%; align-items:stretch; }
+ .control-page .camera-pair figure { display:flex; flex-direction:column; min-height:0; }
+ .control-page .camera-pair figcaption { min-height:29px; padding:5px 8px; flex-shrink:0; align-items:center; }
+ .control-page .camera-image { height:auto; min-height:0; flex:1; overflow:hidden; }
+ .control-page .camera-image img { display:block; width:100%; height:100%; object-fit:contain; }
+ .control-page #lastCapture { font-size:9px; }
+ .control-page .output-head { padding:6px 10px; font-size:10px; }
+ .control-page #obsGraphicButton { padding:5px 9px; }
+}

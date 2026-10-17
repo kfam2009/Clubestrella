@@ -122,7 +122,7 @@ function fitStage() {
     const width = parent.clientWidth, height = stage.classList.contains('stage-render') ? innerHeight : Math.min(500, width*1080/1920);
     const scale = Math.min(width/1920,height/1080);
     stage.style.transform = stage.classList.contains('stage-render') ? `translate(-50%,-50%) scale(${scale})` : `scale(${scale})`;
-    if (stage.classList.contains('stage-preview')) { stage.style.top = `${-820*scale}px`; stage.parentElement.style.height = `${260*scale}px`; }
+    if (stage.classList.contains('stage-preview')) { const compact=innerWidth>1000&&innerWidth<=1400&&innerHeight<=850; stage.style.top = `${-(compact?890:820)*scale}px`; stage.parentElement.style.height = `${(compact?120:260)*scale}px`; }
   });
 }
 render();fitStage();window.addEventListener('resize',fitStage);
@@ -271,3 +271,14 @@ function mountProgramVideo(){
  window.addEventListener('pagehide',stopPreview,{once:true});
 }
 mountProgramVideo();
+
+// Refit when the compact grid settles after images and fonts are loaded.
+const stageSizeObserver=new ResizeObserver(entries=>{
+ const changed=entries.some(entry=>{
+  const width=String(Math.round(entry.contentRect.width));
+  if(entry.target.dataset.fitWidth===width)return false;
+  entry.target.dataset.fitWidth=width;return true;
+ });
+ if(changed)fitStage();
+});
+document.querySelectorAll('.stage-frame').forEach(frame=>stageSizeObserver.observe(frame));
