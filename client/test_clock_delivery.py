@@ -1,4 +1,6 @@
 import json
+import base64
+import io
 import threading
 import time
 import unittest
@@ -7,6 +9,8 @@ from types import SimpleNamespace
 from agent import Uplink,local_server
 from core import Feed,KEYS
 from refresh_graphic import refresh_graphic,SOURCE
+from PIL import Image
+from unittest.mock import patch
 
 class ClockDeliveryTests(unittest.TestCase):
     def test_uplink_sends_each_confirmed_second_without_fixed_delay(self):
@@ -64,5 +68,16 @@ class ClockDeliveryTests(unittest.TestCase):
         self.assertTrue(refresh_graphic(SimpleNamespace(request=request)))
         writes=[(kind,data) for kind,data in calls if kind.startswith('Set')]
         self.assertEqual(writes,[('SetInputSettings',{'inputName':SOURCE,'inputSettings':{'url':'http://127.0.0.1:8771/graphics.html?v=clock-fast-1'},'overlay':True})])
+    def test_blank_source_restores_the_previous_url(self):
+        calls=[];old='http://172.27.4.221:8772/graphics.html?v=old'
+        raw=io.BytesIO();Image.new('RGBA',(4,4)).save(raw,format='PNG')
+        def request(kind,data=None):
+            calls.append((kind,data))
+            if kind=='GetInputList':return {'inputs':[{'inputName':SOURCE,'inputKind':'browser_source'}]}
+            if kind=='GetInputSettings':return {'inputSettings':{'url':old}}
+            if kind=='GetSourceScreenshot':return {'imageData':'data:image/png;base64,'+base64.b64encode(raw.getvalue()).decode()}
+            return {}
+        with patch('refresh_graphic.time.sleep'),self.assertRaises(RuntimeError):refresh_graphic(SimpleNamespace(request=request),verify=True)
+        self.assertEqual(calls[-1],('SetInputSettings',{'inputName':SOURCE,'inputSettings':{'url':old},'overlay':True}))
 
 if __name__=='__main__':unittest.main()
