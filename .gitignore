@@ -6,6 +6,8 @@ client/config.json
 client/prueba-local.json
 client/.runtime/
 client/.obs-safety-lock
+client/.graphic-settings.json
+client/.graphic-settings.tmp
 client/tools/*.exe
 client/tools/*.zip
 client/.venv/

@@ -14,6 +14,28 @@ except ImportError:
     from server import OBS
 
 SOURCE='Panel Go - Marcador Estrella'
+SETTINGS_PATH=Path(__file__).with_name('.graphic-settings.json')
+SETTINGS_LOCK=threading.Lock()
+SETTING_KEYS={'homeName','awayName','homeLogo','awayLogo','tournament','category'}
+
+def read_graphic_settings(path=None):
+    try:return json.loads((path or SETTINGS_PATH).read_text(encoding='utf-8'))
+    except (OSError,ValueError):return {}
+
+def save_graphic_settings(values,path=None):
+    if not isinstance(values,dict) or set(values)-SETTING_KEYS:raise ValueError('Ajustes no permitidos')
+    clean={}
+    for key,value in values.items():
+        if not isinstance(value,str) or len(value)>(1500000 if key.endswith('Logo') else 120):raise ValueError('Valor invalido')
+        if key.endswith('Logo') and value and not value.startswith(('assets/','http://','https://','data:image/')):raise ValueError('Imagen no permitida')
+        clean[key]=value
+    target=path or SETTINGS_PATH
+    with SETTINGS_LOCK:
+        merged={**read_graphic_settings(target),**clean}
+        temporary=target.with_suffix('.tmp')
+        temporary.write_text(json.dumps(merged,ensure_ascii=False),encoding='utf-8')
+        temporary.replace(target)
+    return merged
 READ={'GetCurrentProgramScene','GetSceneItemList','GetInputList','GetVideoSettings','GetSceneItemEnabled'}
 WRITE={'CreateInput','SetSceneItemTransform','SetSceneItemEnabled'}
 
@@ -88,17 +110,19 @@ def make_control_server(control,port=8774,graphic_url='http://127.0.0.1:8771/gra
             if self.headers.get('Origin') not in origins:self.reply(403,{'error':'Origen no permitido'});return
             self.send_response(204);self.send_header('Access-Control-Allow-Origin',self.headers['Origin']);self.send_header('Access-Control-Allow-Methods','GET, POST');self.send_header('Access-Control-Allow-Headers','Content-Type, X-Panel-Token');self.end_headers()
         def do_GET(self):
-            if self.path!='/state':self.reply(404,{});return
+            if self.path not in ('/state','/settings'):self.reply(404,{});return
             if self.headers.get('Origin') and self.headers['Origin'] not in origins:self.reply(403,{});return
+            if self.path=='/settings':self.reply(200,read_graphic_settings());return
             try:self.reply(200,{**control.status(),'token':token})
             except Exception:self.reply(503,{'ready':False,'enabled':False,'error':'Sin conexion con OBS'})
         def do_POST(self):
             if self.headers.get('Origin') not in origins or not secrets.compare_digest(self.headers.get('X-Panel-Token',''),token):self.reply(403,{'error':'Origen no permitido'});return
-            if self.path not in ('/visibility','/install'):self.reply(404,{});return
+            if self.path not in ('/visibility','/install','/settings'):self.reply(404,{});return
             try:
                 length=int(self.headers.get('Content-Length','0'))
-                if not 0<length<=512 or self.headers.get('Content-Type')!='application/json':raise ValueError()
+                if not 0<length<=(3100000 if self.path=='/settings' else 512) or self.headers.get('Content-Type')!='application/json':raise ValueError()
                 data=json.loads(self.rfile.read(length))
+                if self.path=='/settings':self.reply(200,{'ok':True,'settings':save_graphic_settings(data)});return
                 result=control.install(graphic_url) if self.path=='/install' else control.set_enabled(data.get('enabled'))
                 self.reply(200,result)
             except Exception:self.reply(400,{'error':'No se pudo cambiar el marcador en OBS'})
@@ -112,7 +136,7 @@ def make_bridge(address,port,peer,root):
     opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
     def state():
         with opener.open('http://127.0.0.1:8771/api/state',timeout=3) as response:data=json.load(response)
-        return {k:v for k,v in data.items() if k in {'service','clock','homeScore','awayScore','period','fields','connected','ocrStatus','status','updatedAt','revision'}}
+        return {**{k:v for k,v in data.items() if k in {'service','clock','homeScore','awayScore','period','fields','connected','ocrStatus','status','updatedAt','revision'}},'graphicSettings':read_graphic_settings()}
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
         def do_GET(self):

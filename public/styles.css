@@ -501,3 +501,5 @@ input[readonly] { color:#77e5b2; background:#182321; border-color:#35544b; }
  .control-page .settings-drawer:not([open]) > .panel-config { display:none; }
  .control-page .settings-drawer[open] > .panel-config { padding-top:16px; }
 }
+
+.control-page #obsSettingsButton{width:100%;margin-top:12px;padding:10px 8px;border:1px solid #465162;background:#202a38;color:#e6edf7;border-radius:6px;font:600 11px Segoe UI,Arial,sans-serif;cursor:pointer}.control-page #obsSettingsButton:disabled{opacity:.5}

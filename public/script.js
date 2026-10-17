@@ -97,6 +97,7 @@ function persist() {
   const config = Object.fromEntries(Object.entries(state).filter(([key]) => !liveKeys.includes(key)));
   if (!liveMode) Object.assign(config, Object.fromEntries(liveKeys.map(k => [k,state[k]])));
   localStorage.setItem(storageKey, JSON.stringify(config));
+  scheduleOBSSettings();
 }
 document.querySelectorAll('[data-scorebug]').forEach(target => target.replaceChildren(document.getElementById('scorebugTemplate').content.cloneNode(true)));
 document.querySelectorAll('input:not([type=file])').forEach(input => input.addEventListener('input', () => {
@@ -155,6 +156,7 @@ obsGraphicButton?.addEventListener('click',async()=>{
  await refreshOBSGraphic();if(!obsGraphicState||!obsGraphicToken)return;
  obsGraphicBusy=true;obsGraphicButton.disabled=true;
  try{
+  if (!obsGraphicState.enabled && !(await syncOBSSettings())) throw Error();
   const route=obsGraphicState.ready?'visibility':'install';
   const r=await fetch('http://127.0.0.1:8774/'+route,{method:'POST',headers:{'Content-Type':'application/json','X-Panel-Token':obsGraphicToken},body:JSON.stringify({enabled:!obsGraphicState.enabled}),signal:AbortSignal.timeout(12000)});
   if(!r.ok)throw Error();
@@ -162,3 +164,25 @@ obsGraphicButton?.addEventListener('click',async()=>{
  finally{obsGraphicBusy=false;await refreshOBSGraphic();}
 });
 if(obsGraphicButton){refreshOBSGraphic();setInterval(refreshOBSGraphic,3000);}
+
+// Names and logos are explicitly shared with the OBS renderer, not only localStorage.
+const obsSettingsButton=document.getElementById('obsSettingsButton');
+let obsSettingsTimer=0;
+async function syncOBSSettings() {
+ if(!obsSettingsButton)return false;
+ if(!obsGraphicToken)await refreshOBSGraphic();
+ if(!obsGraphicToken){obsSettingsButton.textContent='Sin conexión con OBS';return false;}
+ obsSettingsButton.disabled=true;
+ try{
+  const settings=Object.fromEntries(['homeName','awayName','homeLogo','awayLogo','tournament','category'].map(k=>[k,state[k]||'']));
+  const r=await fetch('http://127.0.0.1:8774/settings',{method:'POST',headers:{'Content-Type':'application/json','X-Panel-Token':obsGraphicToken},body:JSON.stringify(settings),signal:AbortSignal.timeout(5000)});
+  if(!r.ok)throw Error();
+  localStorage.setItem('club-estrella-obs-linked','1');obsSettingsButton.textContent='Datos enviados a OBS ✓';return true;
+ }catch{obsSettingsButton.textContent='No se pudieron enviar los datos';return false;}
+ finally{obsSettingsButton.disabled=false;}
+}
+function scheduleOBSSettings(){
+ if(localStorage.getItem('club-estrella-obs-linked')!=='1')return;
+ clearTimeout(obsSettingsTimer);obsSettingsTimer=setTimeout(syncOBSSettings,350);
+}
+obsSettingsButton?.addEventListener('click',syncOBSSettings);
