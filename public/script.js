@@ -186,3 +186,13 @@ function scheduleOBSSettings(){
  clearTimeout(obsSettingsTimer);obsSettingsTimer=setTimeout(syncOBSSettings,350);
 }
 obsSettingsButton?.addEventListener('click',syncOBSSettings);
+
+// A fresh installation inherits the saved match names and logos from its local controller.
+if (!localStorage.getItem(storageKey)) {
+ fetch('http://127.0.0.1:8774/settings',{signal:AbortSignal.timeout(5000)}).then(r=>r.ok?r.json():{}).then(settings=>{
+  if(localStorage.getItem(storageKey)||!Object.keys(settings).length)return;
+  for(const key of ['homeName','awayName','homeLogo','awayLogo','eventLogo','tournament','category'])if(typeof settings[key]==='string')state[key]=settings[key];
+  localStorage.setItem(storageKey,JSON.stringify(Object.fromEntries(Object.entries(state).filter(([key])=>!liveKeys.includes(key)))));
+  localStorage.setItem('club-estrella-obs-linked','1');render();
+ }).catch(()=>{});
+}

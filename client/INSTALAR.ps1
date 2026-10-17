@@ -26,3 +26,13 @@ if ($PruebaLocal) {
     & (Join-Path $ClientRoot 'CONFIGURAR.ps1')
     Write-Host 'Instalado. Ejecutar INICIAR.cmd para abrir el lector.' -ForegroundColor Green
 }
+
+if (-not $PruebaLocal) {
+    $DesktopFolder = [Environment]::GetFolderPath('Desktop')
+    $ShellLink = New-Object -ComObject WScript.Shell
+    $PanelLink = $ShellLink.CreateShortcut((Join-Path $DesktopFolder 'Panel Go - Club Estrella.lnk'))
+    $PanelLink.TargetPath = Join-Path $ClientRoot 'INICIAR.cmd'
+    $PanelLink.WorkingDirectory = $ClientRoot
+    $PanelLink.Save()
+    Write-Host 'Acceso directo Panel Go - Club Estrella creado en el escritorio.' -ForegroundColor Green
+}

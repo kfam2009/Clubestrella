@@ -141,7 +141,7 @@ def main():
     except OSError:logging.info('El control OBS ya esta abierto o su puerto no esta disponible.')
     threading.Thread(target=feed.run,daemon=True).start()
     if not args.local_only:threading.Thread(target=uplink.run,daemon=True).start()
-    else:uplink.message='Prueba local · sin envio a Render'
+    else:uplink.message='Panel local · activo'
     threading.Thread(target=game.run,daemon=True).start()
     address=f'http://127.0.0.1:{port}/'
     print('Lector activo: '+address,flush=True)
