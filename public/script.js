@@ -63,6 +63,7 @@ function acceptFeed(live) {
   }
   const game = document.getElementById('gamePreview');
   const gameStatus = document.getElementById('gameStatus');
+  const gameLabel = document.getElementById('gameLabel'); if (gameLabel) gameLabel.textContent = live.gameView === 'program' ? '02 / Salida de OBS' : '02 / Cancha';
   const continuous = live.gameMode === 'continuous';
   const player = document.getElementById('gameVideo');
   if (player) player.hidden = !continuous;
@@ -71,7 +72,7 @@ function acceptFeed(live) {
     customElements.whenDefined('club-game').then(() => { player.src = '/video/ws'; });
   }
   if (continuous && game) game.hidden = true;
-  if (gameStatus && !continuous) gameStatus.textContent = live.gameConnected ? 'Capturas de respaldo' : 'Sin actualización';
+  if (gameStatus && !continuous) gameStatus.textContent = live.gameConnected ? (live.gameView === 'program' ? 'Programa · sin audio' : 'Capturas de respaldo') : 'Sin actualización';
   if (gameStatus && continuous && !live.gameReady) gameStatus.textContent = live.gameStatus || 'Preparando video continuo';
   if (game && !continuous) {
     game.classList.toggle('value-stale', !live.gameConnected);

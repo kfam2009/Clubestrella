@@ -23,7 +23,7 @@ import reader as reader_module
 ROOT = Path(__file__).resolve().parent
 KEYS = ('clock', 'homeScore', 'awayScore', 'period')
 GROUPS = {'clock':('m1','m2','s1','s2'), 'homeScore':('h1','h2'), 'awayScore':('a1','a2'), 'period':('p',)}
-ALLOWLIST = {'GetSourceScreenshot', 'GetInputList', 'GetSceneList', 'GetInputSettings'}
+ALLOWLIST = {'GetSourceScreenshot', 'GetInputList', 'GetSceneList', 'GetInputSettings', 'GetCurrentProgramScene'}
 READER_MTIME = Path(reader_module.__file__).stat().st_mtime_ns
 
 

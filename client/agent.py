@@ -18,6 +18,7 @@ from types import SimpleNamespace
 from core import Feed, OBS
 from continuous_video import ContinuousVideo
 from obs_control import GraphicControl,make_control_server
+from program_preview import ProgramPreview
 
 ROOT = Path(__file__).resolve().parent
 
@@ -85,7 +86,7 @@ def local_server(feed,uplink,game,port):
     if not public.is_dir():public=ROOT/'panel'
     if (public/'index.html').is_file():
         page=(public/'index.html').read_text(encoding='utf-8')
-        monitors='<div class="camera-pair"><figure><figcaption>01 / Tablero <small>Lectura automática</small></figcaption><div class="camera-image"><img id="boardPreview" alt="Captura del tablero" hidden></div></figure><figure><figcaption>02 / Cancha <small id="gameStatus">Conectando</small></figcaption><div class="camera-image"><club-game id="gameVideo" aria-label="Video continuo del juego"></club-game><img id="gamePreview" hidden alt="Cámara del juego"></div></figure></div>'
+        monitors='<div class="camera-pair"><figure><figcaption>01 / Tablero <small>Lectura automática</small></figcaption><div class="camera-image"><img id="boardPreview" alt="Captura del tablero" hidden></div></figure><figure><figcaption><span id="gameLabel">02 / Salida de OBS</span> <small id="gameStatus">Conectando</small></figcaption><div class="camera-image"><club-game id="gameVideo" aria-label="Video continuo del juego"></club-game><img id="gamePreview" hidden alt="Cámara del juego"></div></figure></div>'
         page=re.sub(r'<div class="cloud-note">.*?</div>',monitors,page,flags=re.S)
         page=page.replace('<script src="script.js','<script type="module" src="/video-monitor.js"></script><script src="script.js')
     class Handler(BaseHTTPRequestHandler):
@@ -100,6 +101,9 @@ def local_server(feed,uplink,game,port):
             elif route=='/board.png':
                 with feed.lock:data=feed.board
                 kind='image/png'
+            elif route=='/game.jpg' and isinstance(game,ProgramPreview):
+                with game.lock:data=game.image
+                kind='image/jpeg'
             elif route in ('/video-monitor.js','/vendor/video-rtc.js'):
                 data=(ROOT/route.lstrip('/')).read_bytes();kind='text/javascript; charset=utf-8'
             elif route=='/api/events':
@@ -127,7 +131,7 @@ def main():
     feed=Feed(SimpleNamespace(host='127.0.0.1',obs_port=config['obs_port'],source=config.get('source','Camara 2'),game_source=config.get('game_source','camara 01'),interval=.3,
                              game_rtsp=config.get('game_rtsp',''),video_port=int(config.get('video_port',1987))))
     uplink=Uplink(feed,config)
-    game=ContinuousVideo(feed.args,OBS,ROOT)
+    game=ContinuousVideo(feed.args,OBS,ROOT) if config.get('monitor_mode','program')=='camera' else ProgramPreview(feed.args,OBS)
     port=int(config.get('local_port',8771))
     server=local_server(feed,uplink,game,port)
     control_server=None
