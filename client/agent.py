@@ -89,9 +89,27 @@ def local_server(feed,uplink,game,port):
         monitors='<div class="camera-pair"><figure><figcaption>01 / Tablero <small>Lectura automática</small></figcaption><div class="camera-image"><img id="boardPreview" alt="Captura del tablero" hidden></div></figure><figure><figcaption><span id="gameLabel">02 / Salida de OBS</span> <small id="gameStatus">Conectando</small></figcaption><div class="camera-image"><club-game id="gameVideo" aria-label="Video continuo del juego"></club-game><img id="gamePreview" hidden alt="Cámara del juego"></div></figure></div>'
         page=re.sub(r'<div class="cloud-note">.*?</div>',monitors,page,flags=re.S)
         page=page.replace('<script src="script.js','<script type="module" src="/video-monitor.js"></script><script src="script.js')
+    cloud_origin=uplink.config.get('cloud_url','').rstrip('/')
+    allowed_origins={f'http://127.0.0.1:{port}',f'http://localhost:{port}'}
+    if cloud_origin.startswith('https://'):allowed_origins.add(cloud_origin)
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
+        def end_headers(self):
+            origin=self.headers.get('Origin')
+            if origin in allowed_origins:
+                self.send_header('Access-Control-Allow-Origin',origin)
+                self.send_header('Vary','Origin')
+            super().end_headers()
+        def do_OPTIONS(self):
+            if self.headers.get('Origin') not in allowed_origins:self.send_error(403);return
+            if self.path.split('?',1)[0] not in ('/api/state','/board.png','/game.jpg'):self.send_error(404);return
+            self.send_response(204)
+            self.send_header('Access-Control-Allow-Methods','GET, OPTIONS')
+            self.send_header('Access-Control-Allow-Private-Network','true')
+            self.end_headers()
         def do_GET(self):
+            origin=self.headers.get('Origin')
+            if origin and origin not in allowed_origins:self.send_error(403);return
             route=self.path.split('?',1)[0]
             if route=='/video/ws':game.forward_websocket(self);return
             if route in ('/','/index.html'):data=page.encode();kind='text/html; charset=utf-8'

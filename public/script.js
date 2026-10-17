@@ -12,6 +12,7 @@ const state = {...defaults, ...savedSettings()};
 for (const [key,value] of params) if (key in defaults && (!liveMode || !liveKeys.includes(key))) state[key] = value;
 if (liveMode) for (const key of liveKeys) state[key] = defaults[key];
 let lastFeed = null, lastEvent = 0, polling = false;
+let remoteMonitorsActive = false;
 
 function render() {
   document.querySelectorAll('[data-bind]').forEach(node => {
@@ -61,6 +62,10 @@ function acceptFeed(live) {
     const node = document.getElementById(id);
     if (node) {node.textContent = state[key];node.classList.toggle('value-stale',!live.fields?.[key]?.valid);}
   }
+  updateMonitors(live);
+}
+function updateMonitors(live) {
+  if(remoteMonitorsActive && !live.gameMode)return;
   const game = document.getElementById('gamePreview');
   const gameStatus = document.getElementById('gameStatus');
   const gameLabel = document.getElementById('gameLabel'); if (gameLabel) gameLabel.textContent = live.gameView === 'program' ? '02 / Salida de OBS' : '02 / Cancha';
@@ -82,7 +87,7 @@ function acceptFeed(live) {
   }
   const preview = document.getElementById('boardPreview');
   if (preview && live.updatedAt && preview.dataset.revision !== String(live.revision)) {
-    preview.hidden = false;preview.src = 'board.png?t=' + live.revision;preview.dataset.revision = live.revision;
+    preview.hidden = false;preview.src = (live.boardImage || 'board.png') + '?t=' + live.revision;preview.dataset.revision = live.revision;
   }
 }
 async function poll() {
@@ -195,4 +200,28 @@ if (!localStorage.getItem(storageKey)) {
   localStorage.setItem(storageKey,JSON.stringify(Object.fromEntries(Object.entries(state).filter(([key])=>!liveKeys.includes(key)))));
   localStorage.setItem('club-estrella-obs-linked','1');render();
  }).catch(()=>{});
+}
+
+// The hosted panel reads monitors only from the reader on this same PC.
+if(location.hostname==='clubestrella-panel.onrender.com') {
+ const note=document.querySelector('.cloud-note');
+ const cameras=document.createElement('div');cameras.className='camera-pair';cameras.hidden=true;
+ cameras.innerHTML='<figure><figcaption>01 / Tablero <small>Lectura automática · esta PC</small></figcaption><div class="camera-image"><img id="boardPreview" alt="Captura del tablero" hidden></div></figure><figure><figcaption><span id="gameLabel">02 / Salida de OBS</span> <small id="gameStatus">Conectando</small></figcaption><div class="camera-image"><img id="gamePreview" alt="Salida de OBS de esta PC" hidden></div></figure>';
+ note?.before(cameras);
+ if(note)note.textContent='Conectando con los monitores de esta PC. Mantené abierto el lector; si el navegador pide acceso a la red local, permitilo para este panel.';
+ let busy=false;
+ async function pollLocalMonitors(){
+  if(busy)return;busy=true;
+  try{
+   const response=await fetch('http://127.0.0.1:8771/api/state',{cache:'no-store',signal:AbortSignal.timeout(2500)});
+   if(!response.ok)throw Error();const local=await response.json();if(local.service!=='club-estrella')throw Error();
+   remoteMonitorsActive=true;cameras.hidden=false;if(note)note.hidden=true;
+   cameras.querySelectorAll('img').forEach(img=>img.classList.remove('value-stale'));
+   updateMonitors({...local,gameMode:'snapshots',gameImage:'http://127.0.0.1:8771/game.jpg',boardImage:'http://127.0.0.1:8771/board.png'});
+  }catch{
+   if(note){note.hidden=false;note.textContent='Monitores sin conexión con esta PC. Abrí el lector actualizado y permití el acceso a la red local si el navegador lo solicita.';}
+   cameras.querySelectorAll('img').forEach(img=>img.classList.add('value-stale'));
+  }finally{busy=false;}
+ }
+ pollLocalMonitors();setInterval(pollLocalMonitors,2000);
 }
