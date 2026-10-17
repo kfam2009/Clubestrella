@@ -102,7 +102,7 @@ def main():
     parser=argparse.ArgumentParser();parser.add_argument('--config',default=str(ROOT/'config.json'));parser.add_argument('--no-browser',action='store_true');parser.add_argument('--local-only',action='store_true');args=parser.parse_args()
     try:config=load_config(args.config,args.local_only)
     except Exception as exc:raise SystemExit('Configuracion invalida: '+str(exc))
-    if config.get('obs_password'):os.environ['OBS_PASSWORD']=config['obs_password']
+    os.environ['OBS_PASSWORD']=config.get('obs_password','')
     feed=Feed(SimpleNamespace(host='127.0.0.1',obs_port=config['obs_port'],source=config.get('source','Camara 2'),game_source=config.get('game_source','camara 01'),interval=.3,
                              game_rtsp=config.get('game_rtsp',''),video_port=int(config.get('video_port',1987))))
     uplink=Uplink(feed,config)

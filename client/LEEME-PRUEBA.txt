@@ -7,13 +7,13 @@ CLUB ESTRELLA - PRUEBA DE VIDEO CONTINUO EN LA PC DEL CLUB
 
 2. Abrir OBS. Verificar que se vean las dos camaras.
    Herramientas > Ajustes del servidor WebSocket: habilitado, puerto 4455.
-   Anotar su clave si tiene autenticacion. No hace falta cambiar escenas.
+   Desmarcar Habilitar autenticacion: este lector usa OBS local sin clave.
    Las fuentes esperadas son Camara 2 (tablero) y camara 01 (juego).
    La camara del juego debe ser una fuente multimedia RTSP, preferentemente H.264.
 
 3. Ejecutar PREPARAR-PRUEBA.cmd una sola vez, con internet.
-   Instala las dependencias y pide la clave de OBS y los nombres de fuentes.
-   Enter acepta los nombres indicados arriba. La clave queda solo en esta PC.
+   Instala las dependencias y pide los nombres de fuentes, sin clave de OBS.
+   Enter acepta los nombres indicados arriba.
 
 4. Detener el lector anterior si usa el puerto 8771, sin cerrar OBS.
    Ejecutar PROBAR-VIDEO.cmd. Mantener abierta su ventana.

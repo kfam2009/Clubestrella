@@ -20,8 +20,8 @@ La configuración debe tener **una sola instancia**: el último estado se mantie
 
 1. Descargar este repositorio como ZIP y extraerlo.
 2. Instalar Python 3.10 o posterior desde [python.org](https://www.python.org/downloads/windows/) si todavía no está instalado. Activar **Add Python to PATH**.
-3. En OBS, habilitar el servidor WebSocket en el puerto `4455`. La cámara del tablero debe estar activa y conservar el encuadre actual. La fuente usada por defecto se llama `Camara 2`.
-4. En la carpeta `client`, ejecutar `INSTALAR.cmd`. Crea el entorno Python y solicita la URL de Render, `INGEST_TOKEN`, la clave de OBS si existe y el nombre exacto de la fuente.
+3. En OBS, habilitar el servidor WebSocket en el puerto `4455` y desmarcar **Habilitar autenticación** para esta instalación local sin clave. La cámara del tablero debe estar activa y conservar el encuadre actual. La fuente usada por defecto se llama `Camara 2`.
+4. En la carpeta `client`, ejecutar `INSTALAR.cmd`. Crea el entorno Python y solicita la URL de Render, `INGEST_TOKEN`, el nombre exacto de las fuentes (OBS local sin clave).
 5. Ejecutar `client/INICIAR.cmd`. Abre un monitor local en `http://127.0.0.1:8771/` y empieza a enviar lecturas a Render.
 6. Mantener abierta la consola del lector durante el partido. Cerrar la consola detiene el lector. Si ya hay otro panel usando el puerto `8771`, detenerlo antes de iniciar este.
 
@@ -31,7 +31,7 @@ El instalador obtiene go2rtc 1.9.14 de su repositorio oficial y verifica SHA-256
 
 ## Probar video sin configurar Render
 
-En la misma PC de OBS, ejecutar `client/PREPARAR-PRUEBA.cmd` una vez y luego `client/PROBAR-VIDEO.cmd`. El primero instala los componentes y pide la clave de OBS y los nombres de las fuentes. El segundo abre `http://127.0.0.1:8771/` en modo local, sin enviar datos a Render. Detener primero otro lector si está usando ese puerto. Mantener OBS abierto y la consola del lector abierta durante la prueba. Para detener, pulsar Ctrl+C en esa consola.
+En la misma PC de OBS, ejecutar `client/PREPARAR-PRUEBA.cmd` una vez y luego `client/PROBAR-VIDEO.cmd`. El primero instala los componentes y pide los nombres de las fuentes; OBS se usa localmente sin clave. El segundo abre `http://127.0.0.1:8771/` en modo local, sin enviar datos a Render. Detener primero otro lector si está usando ese puerto. Mantener OBS abierto y la consola del lector abierta durante la prueba. Para detener, pulsar Ctrl+C en esa consola.
 
 Comparar el reloj, ambos puntajes y el período durante 2 o 3 minutos, mientras se comprueba el movimiento continuo del juego. El indicador muestra los fps reproducidos; su valor depende de la cámara y la PC. Ver `client/LEEME-PRUEBA.txt`. La reproducción se validó localmente con una señal sintética H.264 de 25 fps; falta la prueba de la cámara real desde la red del club. No se necesita ZeroTier.
 
