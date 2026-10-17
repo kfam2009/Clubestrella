@@ -96,9 +96,10 @@ class GraphicControl:
                 return {'ready':True,'enabled':actual,'scene':scene,'source':SOURCE}
             finally:obs.close()
 
-def make_control_server(control,port=8774,graphic_url='http://127.0.0.1:8771/graphics.html'):
+def make_control_server(control,port=8774,graphic_url='http://127.0.0.1:8771/graphics.html',cloud_origin=''):
     token=secrets.token_urlsafe(32)
     origins={'http://127.0.0.1:8771','http://localhost:8771'}
+    if cloud_origin=='https://clubestrella-panel.onrender.com':origins.add(cloud_origin)
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
         def reply(self,status,data):
@@ -108,7 +109,7 @@ def make_control_server(control,port=8774,graphic_url='http://127.0.0.1:8771/gra
             self.send_header('Content-Type','application/json');self.send_header('Cache-Control','no-store');self.send_header('Content-Length',str(len(raw)));self.end_headers();self.wfile.write(raw)
         def do_OPTIONS(self):
             if self.headers.get('Origin') not in origins:self.reply(403,{'error':'Origen no permitido'});return
-            self.send_response(204);self.send_header('Access-Control-Allow-Origin',self.headers['Origin']);self.send_header('Access-Control-Allow-Methods','GET, POST');self.send_header('Access-Control-Allow-Headers','Content-Type, X-Panel-Token');self.end_headers()
+            self.send_response(204);self.send_header('Access-Control-Allow-Origin',self.headers['Origin']);self.send_header('Access-Control-Allow-Methods','GET, POST');self.send_header('Access-Control-Allow-Headers','Content-Type, X-Panel-Token');self.send_header('Access-Control-Allow-Private-Network','true');self.end_headers()
         def do_GET(self):
             if self.path not in ('/state','/settings'):self.reply(404,{});return
             if self.headers.get('Origin') and self.headers['Origin'] not in origins:self.reply(403,{});return

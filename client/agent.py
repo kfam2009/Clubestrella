@@ -154,7 +154,7 @@ def main():
     server=local_server(feed,uplink,game,port)
     control_server=None
     try:
-        control_server=make_control_server(GraphicControl(port=config['obs_port']),graphic_url=f'http://127.0.0.1:{port}/graphics.html')
+        control_server=make_control_server(GraphicControl(port=config['obs_port']),graphic_url=f'http://127.0.0.1:{port}/graphics.html',cloud_origin=config.get('cloud_url',''))
         threading.Thread(target=control_server.serve_forever,daemon=True).start()
     except OSError:logging.info('El control OBS ya esta abierto o su puerto no esta disponible.')
     threading.Thread(target=feed.run,daemon=True).start()
