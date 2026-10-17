@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Club Estrella — Salida</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="render-page">
+  <main class="stage stage-render">
+    <div data-scorebug></div>
+  </main>
+
+  <template id="scorebugTemplate">
+    <div class="feed-warning">LECTURA EN PAUSA · ÚLTIMO DATO</div>
+    <section class="fbb-scorebug" aria-label="Club Estrella">
+      <div class="fbb-mark">CAE</div>
+      <div class="team-logo"><img data-logo="homeLogo" alt=""></div>
+      <div class="team-name" data-bind="homeName">ESTRELLA</div>
+      <div class="score-box" data-bind="homeScore">--</div>
+      <div class="team-logo"><img data-logo="awayLogo" alt=""></div>
+      <div class="team-name" data-bind="awayName">VISITA</div>
+      <div class="score-box" data-bind="awayScore">--</div>
+      <div class="period-box" data-bind="period">--</div>
+      <div class="clock-box" data-bind="clock">--:--</div>
+
+      <div class="info-box">
+        <strong data-bind="tournament">LIGA PROVINCIAL FBB</strong>
+        <span data-bind="category">U15 M - NORTE 2 / ZONA C</span>
+      </div>
+    </section>
+  </template>
+
+  <script src="script.js"></script>
+</body>
+</html>

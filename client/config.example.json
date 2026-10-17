@@ -1,0 +1,10 @@
+{
+  "cloud_url": "https://YOUR-SERVICE.onrender.com",
+  "ingest_token": "REPLACE_WITH_THE_PRIVATE_INGEST_TOKEN_FROM_RENDER",
+  "obs_host": "127.0.0.1",
+  "obs_port": 4455,
+  "obs_password": "",
+  "source": "Camara 2",
+  "game_source": "camara 01",
+  "local_port": 8771
+}

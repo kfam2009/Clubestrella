@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: clubestrella-panel
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm ci --ignore-scripts
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: INGEST_TOKEN
+        generateValue: true
