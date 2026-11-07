@@ -1,7 +1,7 @@
 from PIL import Image, ImageDraw
 import numpy as np
 
-READER_VERSION = '2026.10.17.6'
+READER_VERSION = '2026.11.07.1'
 
 # Corners TL, TR, BR, BL in the native 1920x1080 camera frame.
 QUADS = {
@@ -61,4 +61,16 @@ def recognize(im,key):
         return '1',{'narrow':True}
     scores=probes(m)
     active=''.join(k for k in sorted(scores) if scores[k]>(.45 if k=='g' else .30))
-    return PATTERNS.get(active),scores
+    if active in PATTERNS:return PATTERNS[active],scores
+    return nearest(scores),scores
+
+def nearest(scores):
+    # A segment near the threshold (angle or glare) must not discard a clear digit.
+    costs={}
+    for pattern,digit in PATTERNS.items():
+        cost=sum((1-scores[k]) if k in pattern else scores[k] for k in 'abcdefg')
+        costs[digit]=min(cost,costs.get(digit,cost))
+    ranked=sorted(costs.items(),key=lambda item:item[1])
+    best,second=ranked[0],ranked[1]
+    if best[1]<=2.2 and second[1]-best[1]>=.5:return best[0]
+    return None
