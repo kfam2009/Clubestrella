@@ -1,3 +1,4 @@
+import math
 import json
 import tempfile
 import unittest
@@ -33,11 +34,113 @@ class ClientTests(unittest.TestCase):
             with patch('core.read_values',return_value=({'clock':value},{})):feed.process(frame,when)
         self.assertEqual(feed.values['clock'],'58.9')
 
+    def test_score_change_survives_one_bad_frame(self):
+        feed=Feed(SimpleNamespace(source='Camara 2'));frame=Image.new('RGB',(1920,1080))
+        for when,value in [(100,'38'),(100.1,'38'),(100.2,'38'),(100.3,'38'),(102,'40'),(102.1,'40'),(103,None),(104,'40'),(104.1,'40')]:
+            with patch('core.read_values',return_value=({'awayScore':value} if value else {},{})):feed.process(frame,when)
+        self.assertEqual(feed.values['awayScore'],'40')
+        for when,value in [(105,'42'),(105.1,'42'),(106,'48'),(107,'42'),(107.1,'42')]:
+            with patch('core.read_values',return_value=({'awayScore':value},{})):feed.process(frame,when)
+        self.assertEqual(feed.values['awayScore'],'42')
+
+    def test_implausible_jumps_need_a_long_streak(self):
+        feed=Feed(SimpleNamespace(source='Camara 2'));frame=Image.new('RGB',(1920,1080))
+        for when,value in [(100,'0'),(100.1,'0'),(100.2,'0'),(100.3,'0'),(102,'81'),(103,'81'),(104,'0'),(105,'81'),(106,'81')]:
+            with patch('core.read_values',return_value=({'awayScore':value},{})):feed.process(frame,when)
+        self.assertEqual(feed.values['awayScore'],'0')
+        for when in range(107,112):
+            with patch('core.read_values',return_value=({'awayScore':'81'},{})):feed.process(frame,when)
+        self.assertEqual(feed.values['awayScore'],'81')
+
     def test_unconfirmed_score_change_is_ignored(self):
         feed=Feed(SimpleNamespace(source='Camara 2'));frame=Image.new('RGB',(1920,1080))
-        for when,value in [(100,'38'),(101,'38'),(102,'18'),(103,'38')]:
+        for when,value in [(100,'38'),(100.1,'38'),(100.2,'38'),(100.3,'38'),(102,'18'),(102.1,'18'),(103,'38')]:
             with patch('core.read_values',return_value=({'awayScore':value},{})):feed.process(frame,when)
         self.assertEqual(feed.values['awayScore'],'38')
+
+    def run_clock(self,feed,readings):
+        frame=Image.new('RGB',(1920,1080))
+        for when,value in readings:
+            with patch('core.read_values',return_value=({'clock':value},{})):feed.process(frame,when)
+
+    def test_running_clock_ignores_misread_frames(self):
+        feed=Feed(SimpleNamespace(source='Camara 2'))
+        readings=[(100,'13:10'),(100.2,'13:10'),(100.4,'13:10')]
+        # The board starts at 101 and counts down; some frames read the units wrong.
+        bad={102.4:'13:01',103.6:'13:06',104.2:'13:09',105.0:'13:00'}
+        t=101.0
+        while t<107:
+            shown=13*60+10-math.floor(t-101+1e-9)-1
+            value=bad.get(round(t,1),f'{shown//60:02d}:{shown%60:02d}')
+            readings.append((round(t,1),value));t+=.2
+        self.run_clock(feed,readings)
+        self.assertTrue(feed.clock.running)
+        seen=[]
+        for t in [103.3,104.3,105.1,106.5]:seen.append(feed.clock.text(t))
+        self.assertEqual(seen,['13:07','13:06','13:05','13:04'])
+
+    def test_clock_stops_when_board_stops(self):
+        feed=Feed(SimpleNamespace(source='Camara 2'))
+        readings=[(100,'05:00'),(100.2,'05:00'),(100.4,'05:00')]
+        t=101.0
+        while t<104:
+            shown=300-math.floor(t-101+1e-9)-1;readings.append((round(t,1),f'{shown//60:02d}:{shown%60:02d}'));t+=.2
+        while t<107:readings.append((round(t,1),'04:57'));t+=.2
+        self.run_clock(feed,readings)
+        self.assertFalse(feed.clock.running);self.assertEqual(feed.values['clock'],'04:57')
+        self.assertEqual(feed.snapshot()['clock'],'04:57')
+        # It starts again when the board goes down.
+        self.run_clock(feed,[(107.2,'04:56'),(107.4,'04:56'),(107.6,'04:56')])
+        self.assertTrue(feed.clock.running)
+
+    def test_free_throw_stop_is_seen_quickly_and_holds(self):
+        feed=Feed(SimpleNamespace(source='Camara 2'))
+        readings=[(100,'06:00'),(100.125,'06:00')]
+        t=101.0
+        while t<104.6:
+            shown=360-math.floor(t-101+1e-9)-1;readings.append((round(t,3),f'{shown//60:02d}:{shown%60:02d}'));t+=.125
+        self.run_clock(feed,readings)
+        stopped_at=readings[-1][1]  # board stops at 104.5 showing 05:56
+        t=104.625;seen=None
+        while t<110:
+            self.run_clock(feed,[(round(t,3),stopped_at)])
+            if seen is None and not feed.clock.running:seen=t
+            t+=.125
+        self.assertIsNotNone(seen);self.assertLessEqual(seen,104.0+1.35)
+        self.assertFalse(feed.clock.running);self.assertEqual(feed.values['clock'],stopped_at)
+        self.run_clock(feed,[(110.1,'05:55'),(110.2,'05:55')])
+        self.assertTrue(feed.clock.running);self.assertEqual(feed.clock.text(110.3),'05:55')
+
+    def test_last_minute_stop_with_tenths(self):
+        feed=Feed(SimpleNamespace(source='Camara 2'))
+        readings=[];t=100.0
+        while t<102:
+            readings.append((round(t,3),f'{math.ceil((45-(t-100))*10-1e-6)/10:04.1f}'));t+=.125
+        self.run_clock(feed,readings)
+        self.assertTrue(feed.clock.running)
+        held=readings[-1][1];t=102.125
+        while t<102.7:self.run_clock(feed,[(round(t,3),held)]);t+=.125
+        self.assertFalse(feed.clock.running);self.assertEqual(feed.values['clock'],held)
+
+    def test_clock_set_by_operator_is_followed(self):
+        feed=Feed(SimpleNamespace(source='Camara 2'))
+        readings=[(100,'05:00'),(100.2,'05:00')]
+        t=101.0
+        while t<103:
+            shown=300-math.floor(t-101+1e-9)-1;readings.append((round(t,1),f'{shown//60:02d}:{shown%60:02d}'));t+=.2
+        readings+=[(round(103.2+i*.2,1),'08:00') for i in range(12)]
+        self.run_clock(feed,readings)
+        self.assertEqual(feed.values['clock'],'08:00')
+
+    def test_short_run_of_misreads_does_not_reset_the_clock(self):
+        feed=Feed(SimpleNamespace(source='Camara 2'))
+        readings=[(100,'04:20'),(100.2,'04:20')]
+        t=101.0
+        while t<103:
+            shown=260-math.floor(t-101+1e-9)-1;readings.append((round(t,1),f'{shown//60:02d}:{shown%60:02d}'));t+=.2
+        readings+=[(103.2,'00:48'),(103.4,'00:48'),(103.6,'00:48'),(103.8,'00:48'),(104.0,'04:16')]
+        self.run_clock(feed,readings)
+        self.assertTrue(feed.clock.running);self.assertEqual(feed.clock.text(104.1),'04:16')
 
 
 if __name__=='__main__':unittest.main()

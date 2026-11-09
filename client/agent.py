@@ -124,7 +124,7 @@ def local_server(feed,uplink,game,port):
                 data=json.dumps(state).encode();kind='application/json'
             elif route=='/board.png':
                 with feed.lock:data=feed.board
-                kind='image/png'
+                kind='image/jpeg'
             elif route=='/game.jpg' and isinstance(game,ProgramPreview):
                 with game.lock:data=game.image
                 kind='image/jpeg'
